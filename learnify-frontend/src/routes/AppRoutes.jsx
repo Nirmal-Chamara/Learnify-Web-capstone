@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import MainLayout from "../components/layout/MainLayout"
 import LandingLayout from "../components/layout/LandingLayout"
 
-// Pages — Temporary placeholder pages
+// Pages
+import LandingPage from "../pages/LandingPage"    
 import DashboardPage from "../pages/DashboardPage"
 import SchedulerPage from "../pages/SchedulerPage"
 import AIChatPage from "../pages/AIChatPage"
@@ -19,7 +20,7 @@ function AppRoutes() {
 
         {/* Landing Page Routes — Light theme */}
         <Route element={<LandingLayout />}>
-          <Route path="/" element={<div className="p-10 text-center text-2xl font-bold text-[#1A3D63]">Landing Page Coming Soon</div>} />
+          <Route path="/" element={<LandingPage />} />  {/* 👈 updated */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
