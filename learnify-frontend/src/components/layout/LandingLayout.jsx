@@ -1,11 +1,11 @@
 import LandingNavbar from "./LandingNavbar"
 import Footer from "./Footer"
 
-const LandingLayout = ({ children }) => {
+function LandingLayout({ children }) {
   return (
     <div className="flex flex-col min-h-screen bg-[#F6FAFD]">
 
-      {/* Top Navbar */}
+      {/* Navbar */}
       <LandingNavbar />
 
       {/* Page Content */}

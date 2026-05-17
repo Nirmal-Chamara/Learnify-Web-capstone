@@ -2,8 +2,12 @@ import { useState } from "react"
 import Sidebar from "./Sidebar"
 import Navbar from "./Navbar"
 
-const MainLayout = ({ children }) => {
+function MainLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  function handleToggleSidebar() {
+    setSidebarOpen(!sidebarOpen)
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0A1931]">
@@ -14,8 +18,8 @@ const MainLayout = ({ children }) => {
       {/* Right Side */}
       <div className="flex flex-col flex-1 overflow-hidden">
 
-        {/* Dashboard Navbar */}
-        <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        {/* Navbar */}
+        <Navbar onToggleSidebar={handleToggleSidebar} />
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6 bg-[#0f2744]">
