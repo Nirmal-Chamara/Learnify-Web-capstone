@@ -21,10 +21,10 @@ function AppRoutes() {
         {/* Landing Page Routes — Light theme */}
         <Route element={<LandingLayout />}>
           <Route path="/" element={<LandingPage />} /> 
-          <Route path="/register" element={<RegisterPage />} />
         </Route>
 
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
         {/* Dashboard Routes — Dark theme with sidebar */}
         <Route element={<MainLayout />}>
