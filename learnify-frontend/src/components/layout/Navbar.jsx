@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate,useLocation } from "react-router-dom"
 import { Menu, Bell, CheckCheck, Clock, BookOpen, AlertCircle } from "lucide-react"
 
 // ── Dummy Notifications ───────────────────────────────────
@@ -46,6 +46,20 @@ const initialNotifications = [
   },
 ]
 
+// ── Page Title Map ────────────────────────────────────────
+const pageTitles = {
+  "/dashboard":          "Dashboard",
+  "/scheduler":          "Study Scheduler",
+  "/progress":           "Progress",
+  "/ai-chat":            "AI Assistant",
+  "/resources":          "Study Materials",
+  "/feedback":           "Feedback",
+  "/profile":            "Profile",
+  "/notifications":      "Notifications",
+  "/mentor/resources":   "My Resources",
+  "/mentor/profile":     "My Profile",
+}
+
 // ── Notification Icon by Type ─────────────────────────────
 function NotificationIcon({ type }) {
   const config = {
@@ -66,14 +80,16 @@ function NotificationIcon({ type }) {
 // ── Main Navbar ───────────────────────────────────────────
 function Navbar({ onToggleSidebar }) {
   const user = { name: "Nirmal Chamara", role: "Student" }
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const pageTitle = pageTitles[location.pathname] || "Dashboard"
 
   const [notifications, setNotifications] = useState(initialNotifications)
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef(null)
 
   const unreadCount = notifications.filter(n => !n.read).length
-
-  const navigate = useNavigate()
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -110,7 +126,7 @@ function Navbar({ onToggleSidebar }) {
           <Menu size={20} />
         </button>
         <h1 className="font-heading font-semibold text-lg text-white">
-          Dashboard
+          {pageTitle}
         </h1>
       </div>
 
