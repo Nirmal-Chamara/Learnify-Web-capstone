@@ -81,7 +81,7 @@ function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Weekly Progress */}
-        <div className="lg:col-span-2 bg-[#f6fafd] rounded-2xl p-6 shadow-xl
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-xl
           border border-white/5">
           <h3 className="font-heading text-sm font-semibold text-[#1A3D63] mb-4">
             Weekly Progress
@@ -129,7 +129,7 @@ function DashboardPage() {
         <div className="space-y-4">
 
           {/* Deadlines Calendar */}
-          <div className="bg-[#f6fafd] rounded-2xl p-4 shadow-lg
+          <div className="bg-white rounded-2xl p-4 shadow-lg
             border border-white/5">
             <h3 className="font-heading text-sm font-semibold text-[#1A3D63] mb-3">
               Deadlines
@@ -176,7 +176,7 @@ function DashboardPage() {
           </div>
 
           {/* Scheduled Subjects */}
-          <div className="bg-[#f6fafd] rounded-2xl p-4 shadow-lg
+          <div className="bg-white rounded-2xl p-4 shadow-lg
             border border-white/5">
             <h3 className="font-heading text-sm font-semibold text-[#1A3D63] mb-3">
               Scheduled Subjects
@@ -207,7 +207,7 @@ function DashboardPage() {
       </div>
 
       {/* ── AI Assistant ── */}
-      <div className="bg-[#f6fafd] rounded-2xl p-6 shadow-lg
+      <div className="bg-white rounded-2xl p-6 shadow-lg
         border border-white/5">
         <h3 className="font-heading text-sm font-semibold text-[#1A3D63] mb-4">
           Your personal AI study assistant
