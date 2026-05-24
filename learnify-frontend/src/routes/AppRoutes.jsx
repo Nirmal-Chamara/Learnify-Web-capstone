@@ -12,6 +12,9 @@ import FeedbackPage from "../pages/FeedbackPage"
 import ProfilePage from "../pages/ProfilePage"
 import LoginPage from "../pages/auth/LoginPage"
 import RegisterPage from "../pages/auth/RegisterPage"
+import MentorResourcesPage from "../pages/mentor/MentorResourcesPage"
+import MentorProfilePage from "../pages/mentor/MentorProfilePage"
+import NotificationsPage from "../pages/NotificationsPage"
 
 function AppRoutes() {
   return (
@@ -34,6 +37,9 @@ function AppRoutes() {
           <Route path="/resources" element={<ResourcesPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/mentor/resources" element={<MentorResourcesPage />} />
+          <Route path="/mentor/profile" element={<MentorProfilePage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
 
       </Routes>
