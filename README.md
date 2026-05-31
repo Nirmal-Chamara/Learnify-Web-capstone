@@ -39,6 +39,27 @@ flask db upgrade
 python run.py
 ```
 
+### Initialize database schema (optional)
+
+You can initialize the MySQL schema using the provided SQL file or the Python seeder.
+
+- Using the Python seeder (reads `DATABASE_URL`):
+
+```powershell
+$env:DATABASE_URL="mysql+pymysql://user:pass@localhost:3306/learnify"
+python learnify-backend\scripts\seed_db.py
+```
+
+- Using Docker Compose (runs the SQL against the `db` service):
+
+```powershell
+# ensure services are up
+docker-compose up -d db
+# then from the repository root (Powershell):
+docker compose exec -T db sh -c "mysql -uroot -p\"$env:DB_PASSWORD\" learnify" < learnify-backend/db/init_schema.sql
+```
+
+
 ## Project Structure
 - `learnify-frontend/` — React 18 + Vite + Tailwind CSS SPA
 - `learnify-backend/` — Flask 3 REST API with JWT auth
