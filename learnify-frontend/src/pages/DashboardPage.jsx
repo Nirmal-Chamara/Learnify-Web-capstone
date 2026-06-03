@@ -5,7 +5,7 @@ import StatsCard from "../components/dashboard/StatsCard";
 import ProductivityChart from "../components/dashboard/ProductivityChart";
 import { DonutChart, SubjectProgress } from "../components/dashboard/DonutChart";
 import { UpcomingTasks, StudyStreak } from "../components/dashboard/UpcomingTasks";
-import { RecentActivity, ClassLeaderboard, MonthlyScoreChart } from "../components/dashboard/AIInsights";
+import { AIInsights, RecentActivity, ClassLeaderboard, MonthlyScoreChart } from "../components/dashboard/AIInsights";
 
 function SectionLabel({ children }) {
   return (
@@ -117,6 +117,14 @@ export default function DashboardPage() {
           <RecentActivity />
           <ClassLeaderboard />
         </div>
+      </div>
+
+      <div className="mt-8">
+        <SectionLabel>AI-Powered Insights</SectionLabel>
+      </div>
+
+      <div className="mt-1">
+        <AIInsights />
       </div>
     </MainLayout>
   );
