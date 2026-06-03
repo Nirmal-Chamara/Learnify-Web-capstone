@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Learnify – Progress & Analytics (Preview)</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { poppins: ['Poppins','sans-serif'], inter: ['Inter','sans-serif'] },
+      }
+    }
+  }
+</script>
+<style>
+  :root {
+    --navy:#0A1931;--midnight:#1A3D63;--steel:#4A7FA7;--sky:#B3CFE5;
+    --frost:#F6FAFD;--page-bg:#EEF4FA;--card-bg:#FFFFFF;--section-bg:#E4EEF7;
+    --border:#D0E3F0;--text-main:#0A1931;--text-sub:#4A6880;--text-muted:#8AAABF;
+    --green:#1a8a4a;--green-bg:#e6f7ed;--amber:#b86a00;--amber-bg:#fff3e0;
+    --red:#c0392b;--red-bg:#fdecea;
+    --sidebar-w:220px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#EEF4FA;color:#0A1931;min-height:100vh;overflow-x:hidden}
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:#EEF4FA}
+  ::-webkit-scrollbar-thumb{background:#D0E3F0;border-radius:99px}
+
+  /* ── Sidebar ── */
+  .sidebar{
+    position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;
+    background:#0A1931;z-index:50;display:flex;flex-direction:column;
+    box-shadow:4px 0 24px rgba(10,25,49,0.25);transition:width .3s;overflow:hidden;
+  }
+  .sidebar-logo{padding:22px 20px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .logo-box{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#1A3D63,#4A7FA7);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Poppins',sans-serif;
+    font-weight:900;font-size:11px;flex-shrink:0;position:relative;overflow:hidden}
+  .logo-text{font-family:'Poppins',sans-serif;font-weight:700;font-size:16px;color:#fff;white-space:nowrap}
+  .logo-text span{color:#B3CFE5}
+  .nav-item{
+    display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;
+    font-size:13.5px;font-weight:500;color:rgba(255,255,255,.5);transition:all .15s;
+    border-left:3px solid transparent;background:transparent;width:100%;border-top:none;border-right:none;border-bottom:none;
+    font-family:'Inter',sans-serif;text-align:left;
+  }
+  .nav-item:hover{color:#fff;background:rgba(255,255,255,.05)}
+  .nav-item.active{color:#fff;background:rgba(74,127,167,.2);border-left-color:#B3CFE5}
+  .nav-item svg{flex-shrink:0;color:inherit}
+  .nav-item.active svg{color:#B3CFE5}
+  .sidebar-bottom{padding:12px 0 16px;border-top:1px solid rgba(255,255,255,.07);margin-top:auto}
+  .bottom-link{
+    display:flex;align-items:center;gap:12px;padding:9px 20px;cursor:pointer;
+    font-size:13px;font-weight:600;background:transparent;border:none;width:100%;
+    transition:background .15s;font-family:'Inter',sans-serif;text-align:left;
+  }
+  .bottom-link:hover{background:rgba(255,255,255,.05)}
+
+  /* ── Topbar ── */
+  .topbar{
+    position:fixed;top:0;left:var(--sidebar-w);right:0;height:62px;
+    background:#fff;border-bottom:1px solid #D0E3F0;
+    display:flex;align-items:center;padding:0 24px;gap:12px;z-index:40;
+    box-shadow:0 2px 8px rgba(10,25,49,.07);transition:left .3s;
+  }
+  .topbar-title{font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#0A1931;white-space:nowrap;margin-right:4px}
+  .tab-group{display:flex;gap:2px;background:#E4EEF7;border:1px solid #D0E3F0;border-radius:10px;padding:3px}
+  .tab-btn{
+    padding:6px 14px;border-radius:7px;border:none;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;
+    background:transparent;color:#4A6880;transition:all .15s;
+  }
+  .tab-btn.active{background:#fff;color:#0A1931;font-weight:600;box-shadow:0 2px 6px rgba(10,25,49,.08)}
+  .tab-btn:hover:not(.active){color:#0A1931}
+  .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .user-name-tb{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0A1931;white-space:nowrap}
+  .user-av-tb{
+    width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4A7FA7,#B3CFE5);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+    color:#0A1931;flex-shrink:0;font-family:'Poppins',sans-serif;cursor:pointer;
+  }
+  .bell-btn{
+    width:32px;height:32px;border-radius:8px;border:1px solid #D0E3F0;background:transparent;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4A6880;
+    position:relative;transition:all .15s;
+  }
+  .bell-btn:hover{border-color:#4A7FA7;color:#4A7FA7}
+  .bell-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:#e53935;border:2px solid #fff}
+
+  /* ── Main ── */
+  .main{margin-left:var(--sidebar-w);padding-top:62px;min-height:100vh;transition:margin-left .3s}
+  .main-inner{padding:28px 32px 60px}
+
+  /* ── Page header ── */
+  .page-hd{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px}
+  .page-title{font-family:'Poppins',sans-serif;font-size:26px;font-weight:800;color:#0A1931;line-height:1.2}
+  .page-title span{color:#4A7FA7}
+  .page-sub{font-size:14px;color:#4A6880;margin-top:4px}
+  .page-date{font-size:13px;color:#8AAABF;background:#fff;border:1px solid #D0E3F0;padding:7px 16px;border-radius:9px}
+
+  /* ── Stats grid ── */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+  .stat-card{
+    background:#fff;border:1px solid #D0E3F0;border-radius:18px;padding:20px 20px 17px;
+    position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(10,25,49,.07);
+    transition:transform .22s,box-shadow .22s;
+  }
+  .stat-card:hover{transform:translateY(-3px);box-shadow:0 4px 20px rgba(10,25,49,.10)}
+  .stat-card.hl{background:linear-gradient(135deg,#0A1931 0%,#1A3D63 60%,#4A7FA7 100%);border-color:transparent;box-shadow:0 4px 20px rgba(10,25,49,.18)}
+  .stat-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+  .stat-lbl{font-size:12px;font-weight:600;color:#8AAABF;letter-spacing:.3px}
+  .hl .stat-lbl{color:rgba(255,255,255,.65)}
+  .stat-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .si-blue{background:#deeef8;color:#4A7FA7}.si-green{background:#e6f7ed;color:#1a8a4a}
+  .si-amber{background:#fff3e0;color:#b86a00}.si-white{background:rgba(255,255,255,.2);color:#fff}
+  .stat-val{font-family:'Poppins',sans-serif;font-size:32px;font-weight:800;color:#0A1931;line-height:1}
+  .hl .stat-val{color:#fff}
+  .stat-val sup{font-size:14px;font-weight:600;color:#4A7FA7;vertical-align:super}
+  .hl .stat-val sup{color:#B3CFE5}
+  .stat-delta{font-size:12px;font-weight:600;margin-top:7px;display:flex;align-items:center;gap:4px}
+  .up{color:#1a8a4a}.neutral{color:#8AAABF}.hl .stat-delta{color:rgba(255,255,255,.7)}
+  .ring-row{display:flex;align-items:center;gap:14px;margin-top:4px}
+  .ring-pct{font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;color:#fff}
+  .ring-lbl{font-size:11px;color:rgba(255,255,255,.55);margin-top:1px}
+
+  /* ── Section label ── */
+  .sec-lbl{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .sec-lbl-text{font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;
+    text-transform:uppercase;color:#4A7FA7;white-space:nowrap}
+  .sec-lbl-line{flex:1;height:1px;background:#D0E3F0}
+
+  /* ── Panel ── */
+  .panel{background:#fff;border:1px solid #D0E3F0;border-radius:18px;overflow:hidden;box-shadow:0 2px 8px rgba(10,25,49,.07)}
+  .panel-hd{padding:18px 22px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #D0E3F0}
+  .panel-title{font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#0A1931}
+  .panel-sub{font-size:12px;color:#8AAABF;margin-top:2px}
+  .panel-bd{padding:20px 22px}
+  .panel-tag{font-size:12px;font-weight:600;color:#4A7FA7;background:#deeef8;padding:5px 13px;border-radius:7px;
+    cursor:pointer;border:none;transition:background .2s;white-space:nowrap;font-family:'Inter',sans-serif}
+  .panel-tag:hover{background:#cce3f3}
+
+  /* ── Subject bars ── */
+  .subj-list{display:flex;flex-direction:column;gap:15px}
+  .subj-meta{display:flex;justify-content:space-between;margin-bottom:6px}
+  .subj-name{font-size:13px;font-weight:600;color:#0A1931}
+  .subj-pct{font-family:'Poppins',sans-serif;font-size:13px;font-weight:700}
+  .bar-track{height:8px;background:#E4EEF7;border-radius:99px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:99px;transition:width .8s ease}
+  .b-green{background:linear-gradient(90deg,#1a8a4a,#5dd87a)}
+  .b-amber{background:linear-gradient(90deg,#b86a00,#f0b94a)}
+  .b-blue{background:linear-gradient(90deg,#4A7FA7,#B3CFE5)}
+  .b-red{background:linear-gradient(90deg,#c0392b,#ff7b7b)}
+
+  /* ── Streak ── */
+  .streak-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .s-lbl{font-size:10px;font-weight:700;color:#8AAABF;text-align:center;padding-bottom:4px}
+  .s-cell{aspect-ratio:1;border-radius:5px;background:#E4EEF7}
+  .s1{background:#cde0f0}.s2{background:#a8cbea}.s3{background:#6fa8d0}
+  .s4{background:#4A7FA7}.s5{background:#1A3D63}
+  .s-today{box-shadow:0 0 0 2px #4A7FA7}
+
+  /* ── Tasks ── */
+  .task-list{display:flex;flex-direction:column;gap:8px}
+  .task-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;
+    background:#F6FAFD;border:1px solid #D0E3F0;transition:background .15s}
+  .task-item:hover{background:#E4EEF7}
+  .task-check{width:19px;height:19px;border-radius:5px;flex-shrink:0;border:2px solid #D0E3F0;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;background:transparent}
+  .task-check.done{background:#1a8a4a;border-color:#1a8a4a}
+  .task-name{font-size:13px;font-weight:600;color:#0A1931}
+  .task-subj{font-size:11px;color:#8AAABF;margin-top:1px}
+  .task-due{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .due-ok{background:#deeef8;color:#4A7FA7}.due-urgent{background:#fdecea;color:#c0392b}.due-soon{background:#fff3e0;color:#b86a00}
+
+  /* ── Activity ── */
+  .act-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #D0E3F0}
+  .act-item:last-child{border-bottom:none}
+  .act-dot{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .act-title{font-size:13px;font-weight:600;color:#0A1931}
+  .act-desc{font-size:12px;color:#8AAABF;margin-top:1px}
+  .act-time{font-size:11px;color:#8AAABF;white-space:nowrap;margin-top:2px}
+
+  /* ── Leaderboard ── */
+  .lb-list{display:flex;flex-direction:column;gap:7px}
+  .lb-item{display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:11px;
+    background:#F6FAFD;border:1px solid #D0E3F0;transition:background .15s}
+  .lb-item:hover{background:#E4EEF7}
+  .lb-item.me{background:#deeef8;border-color:#a8cbea}
+  .lb-rank{font-family:'Poppins',sans-serif;font-size:13px;font-weight:800;width:20px;text-align:center}
+  .lb-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#4A7FA7,#B3CFE5);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0A1931;flex-shrink:0;
+    font-family:'Poppins',sans-serif}
+  .lb-name{flex:1;font-size:13px;font-weight:600;color:#0A1931}
+  .lb-pts{font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:#4A7FA7}
+
+  /* ── Legend ── */
+  .legend-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#4A6880}
+  .legend-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+
+  /* ── Insight cards ── */
+  .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .insight-card{padding:18px;border-radius:14px;border:1px solid #D0E3F0;background:#F6FAFD;
+    position:relative;overflow:hidden;transition:box-shadow .2s,transform .2s}
+  .insight-card:hover{box-shadow:0 4px 20px rgba(10,25,49,.10);transform:translateY(-2px)}
+  .insight-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .ic-tip::before{background:linear-gradient(90deg,#4A7FA7,#B3CFE5)}
+  .ic-warn::before{background:linear-gradient(90deg,#b86a00,#f0b94a)}
+  .ic-achieve::before{background:linear-gradient(90deg,#1a8a4a,#5dd87a)}
+  .insight-icon{font-size:24px;margin-bottom:10px;margin-top:4px}
+  .insight-text{font-size:13px;line-height:1.65;color:#4A6880}
+  .insight-text strong{color:#0A1931}
+  .insight-badge{display:inline-block;margin-top:10px;font-size:10px;font-weight:700;
+    letter-spacing:.8px;text-transform:uppercase;padding:3px 9px;border-radius:5px}
+  .ib-tip{background:#deeef8;color:#4A7FA7}
+  .ib-warn{background:#fff3e0;color:#b86a00}
+  .ib-achieve{background:#e6f7ed;color:#1a8a4a}
+
+  /* ── Responsive ── */
+  @media(max-width:1280px){
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .insight-grid{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:900px){
+    :root{--sidebar-w:64px}
+    .logo-text,.nav-label,.bottom-label{display:none}
+    .nav-item{padding:12px;justify-content:center}
+    .bottom-link{padding:10px;justify-content:center}
+    .sidebar-logo{justify-content:center;padding:18px 10px}
+    .main-inner{padding:20px 16px 40px}
+  }
+  @media(max-width:640px){
+    :root{--sidebar-w:0px}
+    .sidebar{width:0;overflow:hidden}
+    .stats-grid{grid-template-columns:1fr}
+    .insight-grid{grid-template-columns:1fr}
+    .main-inner{padding:16px 12px 40px}
+    .topbar{left:0}
+    .topbar-title{display:none}
+    .user-name-tb{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-box">LF</div>
+    <div class="logo-text">Learn<span>ify</span></div>
+  </div>
+  <nav style="flex:1;padding:12px 0;overflow-y:auto">
+    <button class="nav-item" onclick="setActive(this,'dashboard')">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this,'scheduler')">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span class="nav-label">Scheduler</span>
+    </button>
+    <button class="nav-item active" onclick="setActive(this,'progress')">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">Progress</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this,'ai')">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span class="nav-label">AI Assistant</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this,'materials')">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+      <span class="nav-label">Materials</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this,'help')">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span class="nav-label">Help</span>
+    </button>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="bottom-link" style="color:#B3CFE5">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="bottom-label">Profile</span>
+    </button>
+    <button class="bottom-link" style="color:#f87171">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span class="bottom-label">Logout</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ══ TOPBAR ══ -->
+<header class="topbar">
+  <span class="topbar-title">Progress &amp; Analytics</span>
+  <div style="flex:1;display:flex;justify-content:center">
+    <div class="tab-group">
+      <button class="tab-btn" onclick="setTab(this)">Day</button>
+      <button class="tab-btn" onclick="setTab(this)">Week</button>
+      <button class="tab-btn active" onclick="setTab(this)">Month</button>
+      <button class="tab-btn" onclick="setTab(this)">Semester</button>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="user-name-tb">Nayana Chandupa</span>
+    <div class="user-av-tb">NC</div>
+    <button class="bell-btn">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <div class="bell-dot"></div>
+    </button>
+  </div>
+</header>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+<div class="main-inner">
+
+  <!-- Page header -->
+  <div class="page-hd">
+    <div>
+      <div class="page-title">Progress &amp; <span>Analytics</span></div>
+      <div class="page-sub">Track your academic performance and study habits</div>
+    </div>
+    <div class="page-date">📅 April 2025 · Week 14 of 24</div>
+  </div>
+
+  <!-- ── STAT CARDS ── -->
+  <div class="stats-grid">
+
+    <!-- Overall Progress -->
+    <div class="stat-card hl">
+      <div class="stat-top">
+        <div><div class="stat-lbl">Overall Progress</div></div>
+        <div class="stat-icon si-white">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+      </div>
+      <div class="ring-row">
+        <svg width="60" height="60" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r="23" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="5"/>
+          <circle cx="28" cy="28" r="23" fill="none" stroke="url(#rg)" stroke-width="5"
+            stroke-dasharray="144.5" stroke-dashoffset="36.1" stroke-linecap="round" transform="rotate(-90 28 28)"/>
+          <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#B3CFE5"/><stop offset="100%" stop-color="#ffffff"/>
+          </linearGradient></defs>
+        </svg>
+        <div><div class="ring-pct">75%</div><div class="ring-lbl">Semester Goal</div></div>
+      </div>
+      <div class="stat-delta">↑ 8% from last month</div>
+    </div>
+
+    <!-- Study Hours -->
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-lbl">Study Hours</div>
+        <div class="stat-icon si-blue">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+      </div>
+      <div class="stat-val">142<sup>hrs</sup></div>
+      <div class="stat-delta up">↑ 23 hrs this month</div>
+    </div>
+
+    <!-- Tasks Completed -->
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-lbl">Tasks Completed</div>
+        <div class="stat-icon si-green">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </div>
+      </div>
+      <div class="stat-val">48<sup style="color:#8AAABF">/56</sup></div>
+      <div class="stat-delta up">↑ 85.7% completion rate</div>
+    </div>
+
+    <!-- Current Streak -->
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-lbl">Current Streak</div>
+        <div class="stat-icon si-amber">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+      </div>
+      <div class="stat-val">14<sup>days</sup></div>
+      <div class="stat-delta neutral">🔥 Best: 21 days</div>
+    </div>
+  </div>
+
+  <!-- ── PERFORMANCE OVERVIEW ── -->
+  <div class="sec-lbl"><span class="sec-lbl-text">Performance Overview</span><div class="sec-lbl-line"></div></div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:24px" class="row-2">
+
+    <!-- Line chart -->
+    <div class="panel">
+      <div class="panel-hd">
+        <div><div class="panel-title">Weekly Study Activity</div><div class="panel-sub">Hours studied per day — April 2025</div></div>
+        <button class="panel-tag">Export CSV</button>
+      </div>
+      <div class="panel-bd"><canvas id="lineChart" style="height:240px;max-height:240px"></canvas></div>
+    </div>
+
+    <!-- Subject progress -->
+    <div class="panel">
+      <div class="panel-hd">
+        <div><div class="panel-title">Subject Progress</div><div class="panel-sub">Completion by module</div></div>
+        <button class="panel-tag">Details</button>
+      </div>
+      <div class="panel-bd">
+        <div class="subj-list">
+          <div><div class="subj-meta"><span class="subj-name">Data Structures</span><span class="subj-pct" style="color:#1a8a4a">88%</span></div><div class="bar-track"><div class="bar-fill b-green" style="width:88%"></div></div></div>
+          <div><div class="subj-meta"><span class="subj-name">Calculus III</span><span class="subj-pct" style="color:#b86a00">62%</span></div><div class="bar-track"><div class="bar-fill b-amber" style="width:62%"></div></div></div>
+          <div><div class="subj-meta"><span class="subj-name">Database Systems</span><span class="subj-pct" style="color:#4A7FA7">79%</span></div><div class="bar-track"><div class="bar-fill b-blue" style="width:79%"></div></div></div>
+          <div><div class="subj-meta"><span class="subj-name">Software Engineering</span><span class="subj-pct" style="color:#c0392b">45%</span></div><div class="bar-track"><div class="bar-fill b-red" style="width:45%"></div></div></div>
+          <div><div class="subj-meta"><span class="subj-name">Computer Networks</span><span class="subj-pct" style="color:#1a8a4a">91%</span></div><div class="bar-track"><div class="bar-fill b-green" style="width:91%"></div></div></div>
+          <div><div class="subj-meta"><span class="subj-name">Operating Systems</span><span class="subj-pct" style="color:#b86a00">55%</span></div><div class="bar-track"><div class="bar-fill b-amber" style="width:55%"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TIME DISTRIBUTION ── -->
+  <div class="sec-lbl"><span class="sec-lbl-text">Time Distribution &amp; Consistency</span><div class="sec-lbl-line"></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:24px" class="row-3">
+
+    <!-- Donut -->
+    <div class="panel">
+      <div class="panel-hd"><div><div class="panel-title">Time Allocation</div><div class="panel-sub">By subject — this month</div></div></div>
+      <div class="panel-bd">
+        <canvas id="donutChart" style="height:175px;max-height:175px"></canvas>
+        <div class="legend-row">
+          <div class="legend-item"><div class="legend-dot" style="background:#4A7FA7"></div>Data Struct.</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1A3D63"></div>Calculus</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#7aadcc"></div>Databases</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#a8cbea"></div>Soft. Eng.</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#B3CFE5"></div>Networks</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Streak -->
+    <div class="panel">
+      <div class="panel-hd">
+        <div><div class="panel-title">Study Streak</div><div class="panel-sub">Daily consistency — April</div></div>
+        <span style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:800;color:#c8900a">🔥 14</span>
+      </div>
+      <div class="panel-bd">
+        <div class="streak-grid">
+          <div class="s-lbl">Mo</div><div class="s-lbl">Tu</div><div class="s-lbl">We</div><div class="s-lbl">Th</div><div class="s-lbl">Fr</div><div class="s-lbl">Sa</div><div class="s-lbl">Su</div>
+          <div class="s-cell s2"></div><div class="s-cell s3"></div><div class="s-cell s4"></div><div class="s-cell s3"></div><div class="s-cell s5"></div><div class="s-cell s2"></div><div class="s-cell s1"></div>
+          <div class="s-cell s4"></div><div class="s-cell s5"></div><div class="s-cell s4"></div><div class="s-cell s3"></div><div class="s-cell s5"></div><div class="s-cell s1"></div><div class="s-cell s2"></div>
+          <div class="s-cell s3"></div><div class="s-cell s4"></div><div class="s-cell s5"></div><div class="s-cell s4"></div><div class="s-cell s5"></div><div class="s-cell s3"></div><div class="s-cell s4"></div>
+          <div class="s-cell s5"></div><div class="s-cell s4"></div><div class="s-cell s5 s-today"></div><div class="s-cell"></div><div class="s-cell"></div><div class="s-cell"></div><div class="s-cell"></div>
+        </div>
+        <div class="legend-row">
+          <div class="legend-item"><div class="legend-dot" style="background:#E4EEF7"></div>None</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#cde0f0"></div>1-2h</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#4A7FA7"></div>3-4h</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1A3D63"></div>5h+</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="panel">
+      <div class="panel-hd">
+        <div><div class="panel-title">Upcoming Tasks</div><div class="panel-sub">Next 7 days</div></div>
+        <button class="panel-tag">+ Add</button>
+      </div>
+      <div class="panel-bd">
+        <div class="task-list">
+          <div class="task-item">
+            <div class="task-check done" onclick="toggleTask(this)"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div style="flex:1"><div class="task-name">DS Assignment 3</div><div class="task-subj">Data Structures</div></div>
+            <span class="task-due due-ok">Today</span>
+          </div>
+          <div class="task-item">
+            <div class="task-check" onclick="toggleTask(this)"></div>
+            <div style="flex:1"><div class="task-name">Calculus Quiz Prep</div><div class="task-subj">Calculus III</div></div>
+            <span class="task-due due-urgent">Tomorrow</span>
+          </div>
+          <div class="task-item">
+            <div class="task-check" onclick="toggleTask(this)"></div>
+            <div style="flex:1"><div class="task-name">ER Diagram Draft</div><div class="task-subj">Database Systems</div></div>
+            <span class="task-due due-soon">Apr 21</span>
+          </div>
+          <div class="task-item">
+            <div class="task-check" onclick="toggleTask(this)"></div>
+            <div style="flex:1"><div class="task-name">Lab Report #4</div><div class="task-subj">Computer Networks</div></div>
+            <span class="task-due due-soon">Apr 23</span>
+          </div>
+          <div class="task-item">
+            <div class="task-check" onclick="toggleTask(this)"></div>
+            <div style="flex:1"><div class="task-name">SRS Document</div><div class="task-subj">Software Engineering</div></div>
+            <span class="task-due due-ok">Apr 25</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INSIGHTS & COMMUNITY ── -->
+  <div class="sec-lbl"><span class="sec-lbl-text">Insights &amp; Community</span><div class="sec-lbl-line"></div></div>
+  <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:18px;margin-bottom:24px" class="row-4">
+
+    <!-- Bar chart -->
+    <div class="panel">
+      <div class="panel-hd">
+        <div><div class="panel-title">Monthly Score Trend</div><div class="panel-sub">Assignment &amp; quiz scores across subjects</div></div>
+        <button class="panel-tag">Full Report</button>
+      </div>
+      <div class="panel-bd"><canvas id="barChart" style="height:220px;max-height:220px"></canvas></div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="panel">
+      <div class="panel-hd"><div><div class="panel-title">Recent Activity</div><div class="panel-sub">Your latest actions</div></div></div>
+      <div class="panel-bd" style="padding-top:8px">
+        <div>
+          <div class="act-item"><div class="act-dot" style="background:#deeef8">📚</div><div style="flex:1"><div class="act-title">Completed Chapter 7</div><div class="act-desc">Data Structures · 32 pages</div></div><div class="act-time">2h ago</div></div>
+          <div class="act-item"><div class="act-dot" style="background:#e6f7ed">✅</div><div style="flex:1"><div class="act-title">Submitted Assignment</div><div class="act-desc">DS Assignment 3</div></div><div class="act-time">5h ago</div></div>
+          <div class="act-item"><div class="act-dot" style="background:#fff3e0">🤖</div><div style="flex:1"><div class="act-title">AI Session — 45 min</div><div class="act-desc">Tree traversal concepts</div></div><div class="act-time">Yesterday</div></div>
+          <div class="act-item"><div class="act-dot" style="background:#fdecea">📅</div><div style="flex:1"><div class="act-title">Missed Study Slot</div><div class="act-desc">Calculus · 2h unattended</div></div><div class="act-time">Yesterday</div></div>
+          <div class="act-item"><div class="act-dot" style="background:#deeef8">💬</div><div style="flex:1"><div class="act-title">Mentor Reply Received</div><div class="act-desc">Networks — IPv6 question</div></div><div class="act-time">Apr 17</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="panel">
+      <div class="panel-hd"><div><div class="panel-title">Class Leaderboard</div><div class="panel-sub">Top students this month</div></div></div>
+      <div class="panel-bd">
+        <div class="lb-list">
+          <div class="lb-item"><div class="lb-rank" style="color:#c8900a">1</div><div class="lb-av">AS</div><div class="lb-name">Asel Silva</div><div class="lb-pts">2,480</div></div>
+          <div class="lb-item"><div class="lb-rank" style="color:#7a8fa0">2</div><div class="lb-av">RJ</div><div class="lb-name">Ravi Jayawardena</div><div class="lb-pts">2,210</div></div>
+          <div class="lb-item"><div class="lb-rank" style="color:#b07040">3</div><div class="lb-av">NF</div><div class="lb-name">Nuha Farouk</div><div class="lb-pts">2,090</div></div>
+          <div class="lb-item me"><div class="lb-rank" style="color:#4A7FA7">4</div><div class="lb-av" style="box-shadow:0 0 0 2px #4A7FA7">DK</div><div class="lb-name" style="font-weight:700">You</div><div class="lb-pts">1,940</div></div>
+          <div class="lb-item"><div class="lb-rank" style="color:#8AAABF">5</div><div class="lb-av">KP</div><div class="lb-name">Kasun Perera</div><div class="lb-pts">1,820</div></div>
+          <div class="lb-item"><div class="lb-rank" style="color:#8AAABF">6</div><div class="lb-av">LW</div><div class="lb-name">Layla Wijeratne</div><div class="lb-pts">1,750</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AI INSIGHTS ── -->
+  <div class="sec-lbl"><span class="sec-lbl-text">AI-Powered Insights</span><div class="sec-lbl-line"></div></div>
+  <div class="panel">
+    <div class="panel-hd">
+      <div><div class="panel-title">🤖 Personalised Recommendations</div><div class="panel-sub">Generated based on your study patterns this month</div></div>
+      <button class="panel-tag">Refresh</button>
+    </div>
+    <div class="panel-bd">
+      <div class="insight-grid">
+        <div class="insight-card ic-tip">
+          <div class="insight-icon">⚡</div>
+          <div class="insight-text">Your peak focus window is <strong>9–11 AM</strong>. Schedule your hardest subjects (Calculus, SE) in this slot for maximum retention.</div>
+          <span class="insight-badge ib-tip">Schedule Tip</span>
+        </div>
+        <div class="insight-card ic-warn">
+          <div class="insight-icon">⚠️</div>
+          <div class="insight-text">Software Engineering is at <strong>45%</strong> — 3 weeks behind target. Recommend adding 2 extra sessions this week to catch up.</div>
+          <span class="insight-badge ib-warn">At Risk</span>
+        </div>
+        <div class="insight-card ic-achieve">
+          <div class="insight-icon">🏆</div>
+          <div class="insight-text">You're only <strong>270 points</strong> behind Rank 3. Completing this week's quizzes could push you into the top 3 leaderboard.</div>
+          <span class="insight-badge ib-achieve">Achievement</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-inner -->
+</main>
+
+<script>
+// Nav active state
+function setActive(btn, key){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  btn.classList.add('active');
+}
+// Tab active state
+function setTab(btn){
+  document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+// Task toggle
+function toggleTask(el){
+  const isDone = el.classList.toggle('done');
+  const nameEl = el.closest('.task-item').querySelector('.task-name');
+  nameEl.style.textDecoration = isDone ? 'line-through' : 'none';
+  nameEl.style.opacity = isDone ? '0.5' : '1';
+  el.innerHTML = isDone
+    ? '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    : '';
+}
+
+// Shared tooltip defaults
+const tip = {
+  backgroundColor:'#fff', borderColor:'#D0E3F0', borderWidth:1,
+  titleColor:'#0A1931', bodyColor:'#4A6880',
+  titleFont:{family:'Poppins',weight:'700',size:12},
+  bodyFont:{family:'Inter',size:12}, padding:10, boxPadding:4,
+};
+const grid = 'rgba(208,227,240,0.7)';
+
+// ── Line chart ──
+new Chart(document.getElementById('lineChart'),{
+  type:'line',
+  data:{
+    labels:['Apr 1','Apr 3','Apr 5','Apr 7','Apr 9','Apr 11','Apr 13','Apr 15','Apr 17','Apr 19'],
+    datasets:[
+      {label:'Study Hours',data:[2.5,4,3,5,4.5,6,3.5,5.5,4,5],
+       borderColor:'#4A7FA7',backgroundColor:'rgba(74,127,167,0.07)',borderWidth:2.5,
+       pointBackgroundColor:'#fff',pointBorderColor:'#4A7FA7',pointBorderWidth:2,
+       pointRadius:4,pointHoverRadius:6,tension:0.4,fill:true},
+      {label:'Target',data:[4,4,4,4,4,4,4,4,4,4],
+       borderColor:'rgba(74,127,167,0.28)',borderWidth:1.5,borderDash:[6,4],
+       pointRadius:0,tension:0,fill:false}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:tip},
+    scales:{x:{grid:{color:grid},ticks:{color:'#8AAABF',font:{size:11,family:'Inter'}}},
+            y:{grid:{color:grid},ticks:{color:'#8AAABF',font:{size:11,family:'Inter'}},min:0,max:8}}}
+});
+
+// ── Donut chart ──
+new Chart(document.getElementById('donutChart'),{
+  type:'doughnut',
+  data:{
+    labels:['Data Structures','Calculus','Databases','Soft. Eng.','Networks'],
+    datasets:[{data:[28,18,22,14,18],
+      backgroundColor:['#4A7FA7','#1A3D63','#7aadcc','#a8cbea','#B3CFE5'],
+      borderColor:'#fff',borderWidth:3,hoverOffset:7}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+    plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed}%`}}}}
+});
+
+// ── Bar chart ──
+new Chart(document.getElementById('barChart'),{
+  type:'bar',
+  data:{
+    labels:['Data Struct.','Calculus','Databases','Soft. Eng.','Networks','Op. Systems'],
+    datasets:[
+      {label:'Jan',data:[72,65,78,50,80,60],backgroundColor:'rgba(179,207,229,0.75)',borderRadius:5},
+      {label:'Feb',data:[78,70,82,55,85,65],backgroundColor:'rgba(74,127,167,0.65)',borderRadius:5},
+      {label:'Mar',data:[85,74,88,60,90,70],backgroundColor:'#1A3D63',borderRadius:5},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#4A6880',font:{size:11,family:'Inter'},boxWidth:10,boxHeight:10}},tooltip:tip},
+    scales:{x:{grid:{display:false},ticks:{color:'#8AAABF',font:{size:11,family:'Inter'}}},
+            y:{grid:{color:grid},ticks:{color:'#8AAABF',font:{size:11,family:'Inter'}},min:0,max:100}}}
+});
+
+// Responsive grid collapse
+function applyLayout(){
+  const w = window.innerWidth;
+  document.querySelector('.row-2').style.gridTemplateColumns = w < 900 ? '1fr' : '2fr 1fr';
+  document.querySelector('.row-3').style.gridTemplateColumns = w < 1100 ? (w < 700 ? '1fr' : '1fr 1fr') : '1fr 1fr 1fr';
+  document.querySelector('.row-4').style.gridTemplateColumns = w < 1100 ? (w < 700 ? '1fr' : '1fr 1fr') : '2fr 1fr 1fr';
+  document.querySelector('.stats-grid').style.gridTemplateColumns = w < 900 ? (w < 600 ? '1fr' : '1fr 1fr') : 'repeat(4,1fr)';
+  document.querySelector('.insight-grid').style.gridTemplateColumns = w < 900 ? (w < 600 ? '1fr' : '1fr 1fr') : 'repeat(3,1fr)';
+}
+applyLayout();
+window.addEventListener('resize', applyLayout);
+</script>
+</body>
+</html>

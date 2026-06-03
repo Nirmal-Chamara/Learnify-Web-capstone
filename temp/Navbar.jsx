@@ -1,3 +1,12 @@
+// src/components/layout/Navbar.jsx
+// Top bar: page title left | Day/Week/Month/Semester tabs center | user right
+// Props:
+//   title       – string  page title shown in top bar (default "Progress & Analytics")
+//   activeTab   – string  "day" | "week" | "month" | "semester"
+//   onTabChange – (tab) => void
+//   userName    – string  (default "Nayana Chandupa")
+//   onMenuClick – () => void  hamburger callback on mobile
+
 const TABS = ["Day", "Week", "Month", "Semester"];
 
 export default function Navbar({

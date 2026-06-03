@@ -1,3 +1,14 @@
+// src/components/layout/MainLayout.jsx
+// Composes Sidebar + Navbar + scrollable content area.
+// Handles sidebar collapse on mobile via overlay drawer.
+// Props:
+//   children    – page content
+//   activeNav   – string  passed to Sidebar
+//   navbarTitle – string  passed to Navbar
+//   activeTab   – string  passed to Navbar
+//   onTabChange – fn      passed to Navbar
+//   userName    – string  passed to Navbar
+
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Navbar  from "./Navbar";

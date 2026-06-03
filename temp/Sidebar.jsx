@@ -1,3 +1,10 @@
+// src/components/layout/Sidebar.jsx
+// Dark navy sidebar matching the PNG screenshot exactly.
+// Props:
+//   activeItem  – string key of the active nav item (default "progress")
+//   onNavigate  – (key) => void  callback when a nav item is clicked
+//   collapsed   – bool  (passed by MainLayout on small screens)
+
 import { useState } from "react";
 
 const NAV_ITEMS = [

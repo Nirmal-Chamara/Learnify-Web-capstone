@@ -1,3 +1,20 @@
+// src/components/dashboard/StatsCard.jsx
+// Reusable stat card.  Two visual variants:
+//   variant="highlight"  → dark navy gradient (Overall Progress with ring)
+//   variant="default"    → white card with coloured icon
+//
+// Props:
+//   variant     – "highlight" | "default"
+//   label       – string   top label text
+//   value       – string   big number/text
+//   valueSuffix – string   small superscript after value  e.g. "hrs" | "/56" | "days"
+//   delta       – string   bottom delta text
+//   deltaType   – "up" | "neutral"
+//   iconColor   – "blue" | "green" | "amber" | "white"
+//   icon        – JSX      svg icon element
+//   // Only for variant="highlight":
+//   ringPct     – number   0-100 for the circular progress ring
+//   ringLabel   – string   label under percentage in ring
 
 const ICON_BG = {
   blue:  "bg-[#deeef8] text-[#4A7FA7]",
@@ -55,7 +72,7 @@ export default function StatsCard({
   return (
     <div
       className={`
-        h-full rounded-[18px] p-5 relative overflow-hidden
+        rounded-[18px] p-5 relative overflow-hidden
         border transition-all duration-200 hover:-translate-y-1
         ${isHighlight
           ? "border-transparent text-white"
