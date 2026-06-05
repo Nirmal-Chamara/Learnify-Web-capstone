@@ -21,7 +21,7 @@ def create_app(config_name="development"):
     migrate.init_app(app, db)
     bcrypt.init_app(app)
     cors.init_app(app, resources={
-        r"/api/*": {"origins": "http://localhost:3000"}
+        r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}
     })
 
     # Register blueprints

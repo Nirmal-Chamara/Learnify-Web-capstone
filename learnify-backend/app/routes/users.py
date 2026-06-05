@@ -8,16 +8,11 @@ bp = Blueprint("users", __name__)
 
 
 # ── GET /api/users/profile ────────────────────────────────
-# Get the currently logged in user's profile
-# Uses JWT token to identify the user — no ID needed in URL
 @bp.route("/profile", methods=["GET"])
 @jwt_required()
 def get_profile():
-    # Get user ID from JWT token
     user_id = int(get_jwt_identity())
-
-    # Find user in database
-    user = User.query.get(user_id)
+    user    = User.query.get(user_id)
 
     if not user:
         return error_response("NOT_FOUND", "User not found", status=404)
@@ -26,9 +21,6 @@ def get_profile():
 
 
 # ── PATCH /api/users/profile ──────────────────────────────
-# Update the currently logged in user's profile
-# Users can only update their own profile
-# They cannot change their role or email through this endpoint
 @bp.route("/profile", methods=["PATCH"])
 @jwt_required()
 def update_profile():
@@ -40,9 +32,17 @@ def update_profile():
 
     data = request.get_json()
 
-    # Only allow safe fields to be updated
-    # Email and role changes are not allowed here for security
-    allowed_fields = ["name", "avatar_url"]
+    # All fields that can be updated
+    allowed_fields = [
+        "name",
+        "phone",
+        "bio",
+        "student_id",
+        "university",
+        "faculty",
+        "year",
+        "avatar_url",
+    ]
 
     updated = False
     for field in allowed_fields:
@@ -66,8 +66,6 @@ def update_profile():
 
 
 # ── PATCH /api/users/change-password ─────────────────────
-# Change the current user's password
-# Requires current password for verification
 @bp.route("/change-password", methods=["PATCH"])
 @jwt_required()
 def change_password():
@@ -81,7 +79,6 @@ def change_password():
 
     data = request.get_json()
 
-    # Validate required fields
     if not data.get("current_password") or not data.get("new_password"):
         return error_response(
             "MISSING_FIELD",
@@ -89,7 +86,6 @@ def change_password():
             status=400
         )
 
-    # Verify current password is correct
     if not bcrypt.check_password_hash(user.password_hash, data["current_password"]):
         return error_response(
             "INVALID_PASSWORD",
@@ -97,7 +93,6 @@ def change_password():
             status=400
         )
 
-    # Validate new password length
     if len(data["new_password"]) < 6:
         return error_response(
             "WEAK_PASSWORD",
@@ -105,7 +100,6 @@ def change_password():
             status=400
         )
 
-    # Hash and save new password
     user.password_hash = bcrypt.generate_password_hash(
         data["new_password"]
     ).decode("utf-8")
@@ -116,21 +110,14 @@ def change_password():
 
 
 # ── GET /api/users/<id> ───────────────────────────────────
-# Get any user by ID
-# Admin only — regular users cannot access other profiles
 @bp.route("/<int:user_id>", methods=["GET"])
 @jwt_required()
 def get_user(user_id):
-    # Check if current user is admin
     claims = get_jwt()
     role   = claims.get("role")
 
     if role != "admin":
-        return error_response(
-            "FORBIDDEN",
-            "Admin access required",
-            status=403
-        )
+        return error_response("FORBIDDEN", "Admin access required", status=403)
 
     user = User.query.get(user_id)
 
