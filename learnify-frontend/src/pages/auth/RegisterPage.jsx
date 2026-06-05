@@ -2,9 +2,11 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import backgroundImage from "../../assets/images/background.jpg"
 import { GraduationCap, Users } from "lucide-react"
+import { useAuth } from "../../hooks/useAuth"
 
 function RegisterPage() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -43,9 +45,21 @@ function RegisterPage() {
       return
     }
 
-    // TODO: Connect to backend later
-    console.log("Register with:", formData)
-    navigate("/dashboard")
+    const mockUser = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      role: formData.role
+    }
+
+    console.log("Register with:", mockUser)
+    login(mockUser, "mock-access-token")
+
+    if (formData.role === "mentor") {
+      navigate("/mentor/dashboard")
+    } else {
+      navigate("/dashboard")
+    }
   }
 
   return (

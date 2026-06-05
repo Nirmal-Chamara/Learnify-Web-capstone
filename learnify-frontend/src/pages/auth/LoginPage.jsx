@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import backgroundImage from "../../assets/images/background.jpg"
+import { useAuth } from "../../hooks/useAuth"
 
 function LoginPage() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -24,9 +26,23 @@ function LoginPage() {
       return
     }
 
-    // TODO: Connect to backend later
-    console.log("Login with:", formData)
-    navigate("/dashboard")
+    // Dynamic mock login depending on email address
+    const isMentor = formData.email.toLowerCase().includes("mentor") || formData.email.toLowerCase().includes("kamal")
+    const mockUser = {
+      firstName: isMentor ? "Kamal" : "Nirmal",
+      lastName: isMentor ? "Fernando" : "Chamara",
+      email: formData.email,
+      role: isMentor ? "mentor" : "student"
+    }
+
+    console.log("Login with:", mockUser)
+    login(mockUser, "mock-access-token")
+
+    if (isMentor) {
+      navigate("/mentor/dashboard")
+    } else {
+      navigate("/dashboard")
+    }
   }
 
   return (

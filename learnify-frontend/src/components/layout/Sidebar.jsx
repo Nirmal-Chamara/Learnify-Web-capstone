@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom"
 import {
   LayoutDashboard, CalendarDays, TrendingUp,
-  Bot, BookOpen, HelpCircle, User, LogOut
+  Bot, BookOpen, HelpCircle, User, LogOut, Bell, Users
 } from "lucide-react"
 import sidebarBg from "../../assets/images/sidebar_img.jpg"
+import { useAuth } from "../../hooks/useAuth"
 
-const navItems = [
+const studentNavItems = [
   { label: "Dashboard",    icon: LayoutDashboard, path: "/dashboard" },
   { label: "Scheduler",    icon: CalendarDays,    path: "/scheduler"  },
   { label: "Progress",     icon: TrendingUp,      path: "/progress"   },
@@ -14,7 +15,21 @@ const navItems = [
   { label: "Help",         icon: HelpCircle,      path: "/help"       },
 ]
 
+const mentorNavItems = [
+  { label: "Dashboard",        icon: LayoutDashboard, path: "/mentor/dashboard" },
+  { label: "Student Requests", icon: Users,           path: "/mentor/requests"  },
+  { label: "Notification",     icon: Bell,            path: "/notifications"    },
+  { label: "AI Assistant",     icon: Bot,             path: "/ai-chat"          },
+  { label: "Resource",         icon: BookOpen,        path: "/mentor/resources" },
+  { label: "Help",             icon: HelpCircle,      path: "/help"             },
+]
+
 function Sidebar({ isOpen }) {
+  const { user, logout } = useAuth()
+  const isMentor = user?.role === "mentor"
+  const navItems = isMentor ? mentorNavItems : studentNavItems
+  const profilePath = isMentor ? "/mentor/profile" : "/profile"
+
   return (
     <div
       className={`relative flex flex-col h-screen text-white
@@ -68,7 +83,7 @@ function Sidebar({ isOpen }) {
         {/* Bottom */}
         <div className="px-3 py-4 border-t border-white/10 space-y-1">
           <NavLink
-            to="/profile"
+            to={profilePath}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
               transition-all duration-200
@@ -82,9 +97,12 @@ function Sidebar({ isOpen }) {
             <span>Profile</span>
           </NavLink>
 
-          <button className="w-full flex items-center gap-3 px-3 py-2.5
-            rounded-lg text-sm text-red-400 hover:bg-white/10
-            hover:text-red-300 transition-all duration-200">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-2.5
+              rounded-lg text-sm text-red-400 hover:bg-white/10
+              hover:text-red-300 transition-all duration-200 text-left"
+          >
             <LogOut size={18} />
             <span>Logout</span>
           </button>
