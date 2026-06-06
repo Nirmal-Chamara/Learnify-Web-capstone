@@ -1,6 +1,6 @@
 from flask import Flask
 from app.extensions import db, jwt, migrate, bcrypt, cors
-from app.routes import auth, chat, scheduler, tracking, feedback, resources, admin, notifications, users
+from app.routes import auth, chat, scheduler, tracking, feedback, resources, admin, notifications, users, subjects
 from app.config import config
 from app.middleware.error_handler import register_error_handlers
 from app.models.user              import User
@@ -21,7 +21,7 @@ def create_app(config_name="development"):
     migrate.init_app(app, db)
     bcrypt.init_app(app)
     cors.init_app(app, resources={
-        r"/api/*": {"origins": "http://localhost:3000"}
+        r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}
     })
 
     # Register blueprints
@@ -34,6 +34,7 @@ def create_app(config_name="development"):
     app.register_blueprint(admin.bp,         url_prefix="/api/admin")
     app.register_blueprint(notifications.bp, url_prefix="/api/notifications")
     app.register_blueprint(users.bp,         url_prefix="/api/users")
+    app.register_blueprint(subjects.bp,      url_prefix="/api/subjects")
 
     register_error_handlers(app)
     return app

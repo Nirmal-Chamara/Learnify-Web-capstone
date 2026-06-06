@@ -1,22 +1,16 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { User, Mail, Phone, BookOpen, GraduationCap, Save } from "lucide-react"
 import Button from "../components/common/Button"
-
-const initialData = {
-  firstName:   "Nirmal",
-  lastName:    "Chamara",
-  email:       "nirmal@gmail.com",
-  phone:       "076 555 6756",
-  university:  "Sabaragamuwa University of Sri Lanka",
-  faculty:     "Faculty of Computing",
-  year:        "2nd Year",
-  studentId:   "ICT/21/876",
-  bio:         "Passionate about mathematics and physics. Aiming to excel in A/L exams.",
-}
+import LoadingSpinner from "../components/common/LoadingSpinner"
+import ErrorMessage from "../components/common/ErrorMessage"
+import { getProfile, updateProfile } from "../api/usersApi"
+import Avatar from "../components/common/Avatar"
+import profileImg from "../assets/icons/profile.png"
 
 const yearOptions = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
 
-function InputField({ label, icon: Icon, type = "text", value, onChange, name, disabled }) {
+function InputField({ label, icon: Icon, type = "text", value,
+  onChange, name, disabled }) {
   return (
     <div>
       <label className="font-body text-xs text-gray-500 mb-1.5 block">
@@ -30,7 +24,7 @@ function InputField({ label, icon: Icon, type = "text", value, onChange, name, d
         <input
           type={type}
           name={name}
-          value={value}
+          value={value || ""}
           onChange={onChange}
           disabled={disabled}
           className={`w-full ${Icon ? "pl-9" : "pl-3"} pr-3 py-2.5
@@ -45,33 +39,114 @@ function InputField({ label, icon: Icon, type = "text", value, onChange, name, d
 }
 
 function ProfilePage() {
-  const [formData, setFormData] = useState(initialData)
-  const [saved, setSaved]       = useState(false)
+  const [formData, setFormData] = useState({
+    firstName:  "",
+    lastName:   "",
+    email:      "",
+    phone:      "",
+    university: "",
+    faculty:    "",
+    year:       "1st Year",
+    studentId:  "",
+    bio:        "",
+  })
+
+  const [loading, setLoading]     = useState(true)
+  const [saving, setSaving]       = useState(false)
+  const [saved, setSaved]         = useState(false)
+  const [error, setError]         = useState("")
   const [activeTab, setActiveTab] = useState("personal")
+
+  // ── Fetch all profile data on load ─────────────────────
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        setLoading(true)
+        const response = await getProfile()
+        const user     = response.data
+
+        // Split full name into first and last
+        const nameParts = (user.name || "").split(" ")
+        const firstName = nameParts[0] || ""
+        const lastName  = nameParts.slice(1).join(" ") || ""
+
+        // Fill ALL fields from backend
+        setFormData({
+          firstName:  firstName,
+          lastName:   lastName,
+          email:      user.email      || "",
+          phone:      user.phone      || "",
+          university: user.university || "",
+          faculty:    user.faculty    || "",
+          year:       user.year       || "1st Year",
+          studentId:  user.student_id || "",
+          bio:        user.bio        || "",
+        })
+
+      } catch (err) {
+        setError("Failed to load profile. Please refresh the page.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  function handleSave() {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  // ── Save ALL fields to backend ─────────────────────────
+  async function handleSave() {
+    setError("")
+    setSaved(false)
+
+    try {
+      setSaving(true)
+
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim()
+
+      // Send ALL fields to backend
+      await updateProfile({
+        name:       fullName,
+        phone:      formData.phone,
+        bio:        formData.bio,
+        student_id: formData.studentId,
+        university: formData.university,
+        faculty:    formData.faculty,
+        year:       formData.year,
+      })
+
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+
+    } catch (err) {
+      const message = err.response?.data?.error?.message
+        || "Failed to save changes. Please try again."
+      setError(message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" label="Loading profile..." />
+      </div>
+    )
   }
 
   return (
     <div className="max-w-3xl space-y-5">
 
-      {/* ── Header Card ── */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      {/* Header Card */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm
+        border border-gray-100">
         <div className="flex items-center gap-5">
-
           {/* Avatar */}
-          <div className="w-16 h-16 rounded-full bg-[#1A3D63] flex
-            items-center justify-center flex-shrink-0">
-            <span className="font-heading text-2xl font-bold text-white">
-              {formData.firstName.charAt(0)}{formData.lastName.charAt(0)}
-            </span>
-          </div>
+          <Avatar src={profileImg} name={`${formData.firstName} ${formData.lastName}`} size="lg" />
 
           {/* Info */}
           <div className="flex-1">
@@ -85,31 +160,35 @@ function ProfilePage() {
               {formData.university}
             </p>
           </div>
-
-          {/* Role Badge */}
           <span className="bg-blue-50 text-blue-600 font-body text-xs
             font-semibold px-3 py-1.5 rounded-full border border-blue-100">
             Student
           </span>
-
         </div>
       </div>
 
-      {/* ── Tabs ── */}
+      {/* Error */}
+      {error && (
+        <ErrorMessage
+          message={error}
+          onDismiss={() => setError("")}
+        />
+      )}
+
+      {/* Tabs */}
       <div className="flex gap-2">
         {["personal", "academic"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`font-body text-sm font-medium px-5 py-2 rounded-lg transition-colors 
-                        duration-200 capitalize ${activeTab === tab ? "bg-[#1A3D63] text-white" : "bg-white text-gray-400 hover:text-[#1A3D63] border border-gray-200"}`}
+            className={`font-body text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-200 capitalize ${activeTab === tab ? "bg-[#1A3D63] text-white" : "bg-white text-gray-400 hover:text-[#1A3D63] border border-gray-200"}`}
           >
             {tab === "personal" ? "Personal Info" : "Academic Info"}
           </button>
         ))}
       </div>
 
-      {/* ── Personal Info Tab ── */}
+      {/* Personal Info */}
       {activeTab === "personal" && (
         <div className="bg-white rounded-2xl p-6 shadow-sm
           border border-gray-100">
@@ -139,6 +218,7 @@ function ProfilePage() {
               name="email"
               value={formData.email}
               onChange={handleChange}
+              disabled
             />
             <InputField
               label="Phone Number"
@@ -148,7 +228,6 @@ function ProfilePage() {
               onChange={handleChange}
             />
           </div>
-
           <div className="mt-4">
             <label className="font-body text-xs text-gray-500 mb-1.5 block">
               Bio
@@ -167,7 +246,7 @@ function ProfilePage() {
         </div>
       )}
 
-      {/* ── Academic Info Tab ── */}
+      {/* Academic Info */}
       {activeTab === "academic" && (
         <div className="bg-white rounded-2xl p-6 shadow-sm
           border border-gray-100">
@@ -182,7 +261,6 @@ function ProfilePage() {
               name="studentId"
               value={formData.studentId}
               onChange={handleChange}
-              disabled
             />
             <div>
               <label className="font-body text-xs text-gray-500
@@ -220,10 +298,15 @@ function ProfilePage() {
         </div>
       )}
 
-      {/* ── Save Button ── */}
+      {/* Save Button */}
       <div className="flex items-center gap-3">
-        <Button variant="primary" icon={Save} onClick={handleSave}>
-          Save Changes
+        <Button
+          variant="primary"
+          icon={Save}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "Saving..." : "Save Changes"}
         </Button>
         {saved && (
           <span className="font-body text-sm text-green-500 font-medium">
@@ -231,9 +314,9 @@ function ProfilePage() {
           </span>
         )}
       </div>
+
     </div>
   )
 }
 
 export default ProfilePage
-

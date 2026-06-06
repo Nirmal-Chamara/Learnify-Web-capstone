@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom"
+import { NavLink, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard, CalendarDays, TrendingUp,
   Bot, BookOpen, HelpCircle, User, LogOut, Bell, Users
@@ -27,6 +27,7 @@ const mentorNavItems = [
 
 function Sidebar({ isOpen }) {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const isMentor = user?.role === "mentor"
   const navItems = isMentor ? mentorNavItems : studentNavItems
   const profilePath = isMentor ? "/mentor/profile" : "/profile"
@@ -99,7 +100,10 @@ function Sidebar({ isOpen }) {
           </NavLink>
 
           <button
-            onClick={logout}
+            onClick={() => {
+              logout()
+              navigate("/login")
+            }}
             className="w-full flex items-center gap-3 px-3 py-2.5
               rounded-lg text-sm text-red-400 hover:bg-white/10
               hover:text-red-300 transition-all duration-200 text-left"
