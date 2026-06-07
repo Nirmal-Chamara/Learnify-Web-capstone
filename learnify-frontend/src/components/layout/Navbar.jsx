@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react"
-import { Menu, Bell, CheckCheck, Clock, BookOpen, AlertCircle } from "lucide-react"
+import { Menu, Bell, CheckCheck, Clock, BookOpen, AlertCircle, User, LogOut } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import Avatar from "../common/Avatar"
 import Tooltip from "../common/Tooltip"
 import Badge from "../common/Badge"
+import { useAuth } from "../../hooks/useAuth"
+import profileImg from "../../assets/icons/profile.png"
 import {
   getNotifications,
   markAsRead,
@@ -21,6 +23,7 @@ const pageTitles = {
   "/notifications":    "Notifications",
   "/mentor/resources": "My Resources",
   "/mentor/profile":   "My Profile",
+  "/help":             "Help Requests",
 }
 
 // ── Notification Icon ─────────────────────────────────────
@@ -43,17 +46,22 @@ function NotificationIcon({ type }) {
 }
 
 function Navbar({ onToggleSidebar }) {
+  const { logout } = useAuth()
   const navigate    = useNavigate()
   const location    = useLocation()
   const pageTitle   = pageTitles[location.pathname] || "Dashboard"
   const dropdownRef = useRef(null)
+  const profileDropdownRef = useRef(null)
 
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount]     = useState(0)
   const [showDropdown, setShowDropdown]   = useState(false)
-  const [user, setUser]                   = useState({ name: "", role: "" })
+  const [showProfileCard, setShowProfileCard] = useState(false)
+  const [user, setUser]                   = useState({ name: "", role: "", email: "" })
 
-  // ── Fetch notifications on mount ──────────────────────
+  const profilePath = user?.role === "mentor" ? "/mentor/profile" : "/profile"
+
+  // ── Fetch notifications and user on mount ────────────────
   useEffect(() => {
     fetchNotifications()
     fetchUser()
@@ -77,7 +85,6 @@ function Navbar({ onToggleSidebar }) {
       if (!token) return
 
       // Decode JWT payload to get user info
-      const payload = JSON.parse(atob(token.split(".")[1]))
       const { default: api } = await import("../../api/axiosInstance")
       const response = await api.get("/auth/me")
       setUser(response.data.data)
@@ -86,11 +93,14 @@ function Navbar({ onToggleSidebar }) {
     }
   }
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowDropdown(false)
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setShowProfileCard(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -247,17 +257,80 @@ function Navbar({ onToggleSidebar }) {
           )}
         </div>
 
-        {/* User */}
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="font-body text-sm font-medium text-white">
-              {user.name || "User"}
-            </p>
-            <p className="font-body text-xs text-[#B3CFE5] capitalize">
-              {user.role || "Student"}
-            </p>
-          </div>
-          <Avatar name={user.name || "U"} color="accent" size="md" />
+        {/* User / Profile Card Trigger */}
+        <div className="relative" ref={profileDropdownRef}>
+          <button
+            onClick={() => setShowProfileCard(!showProfileCard)}
+            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-white/5 transition-colors focus:outline-none text-left"
+          >
+            <div className="text-right hidden sm:block">
+              <p className="font-body text-sm font-medium text-white leading-tight">
+                {user.name || "User"}
+              </p>
+              <p className="font-body text-[11px] text-[#B3CFE5] mt-0.5 capitalize">
+                {user.role || "Student"}
+              </p>
+            </div>
+            <Avatar src={profileImg} name={user.name || "U"} color="accent" size="md" />
+          </button>
+
+          {/* Profile Card Dropdown */}
+          {showProfileCard && (
+            <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-4 overflow-hidden text-[#0A1931]">
+              {/* Profile Card Header */}
+              <div className="flex flex-col items-center text-center pb-4 border-b border-gray-100">
+                <Avatar src={profileImg} name={user.name || "U"} color="accent" size="lg" />
+                <h4 className="font-heading font-bold text-base mt-3 leading-tight">
+                  {user.name || "User"}
+                </h4>
+                <span className="font-body text-xs text-gray-400 mt-0.5">
+                  {user.email || "user@learnify.com"}
+                </span>
+                <span className="mt-2.5 px-3 py-1 bg-[#F6FAFD] border border-[#B3CFE5]/30 rounded-full font-body text-[11px] font-semibold text-[#1A3D63] uppercase tracking-wider">
+                  {user.role || "student"}
+                </span>
+              </div>
+
+              {/* Profile Card Menu */}
+              <div className="py-2 space-y-1">
+                <button
+                  onClick={() => {
+                    setShowProfileCard(false)
+                    navigate(profilePath)
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-gray-600 hover:bg-gray-50 hover:text-[#1A3D63] transition-colors text-left"
+                >
+                  <User size={16} />
+                  <span>My Profile</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowProfileCard(false)
+                    navigate("/notifications")
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-gray-600 hover:bg-gray-50 hover:text-[#1A3D63] transition-colors text-left"
+                >
+                  <Bell size={16} />
+                  <span>Notifications</span>
+                </button>
+              </div>
+
+              {/* Divider and Logout */}
+              <div className="pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setShowProfileCard(false)
+                    logout()
+                    navigate("/login")
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors text-left font-medium"
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

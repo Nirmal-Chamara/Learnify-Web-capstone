@@ -18,6 +18,7 @@ import MentorResourcesPage from "../pages/mentor/MentorResourcesPage"
 import MentorProfilePage from "../pages/mentor/MentorProfilePage"
 import MentorDashboardPage from "../pages/mentor/MentorDashboardPage"
 import NotificationsPage from "../pages/NotificationsPage"
+import HelpPage from "../pages/HelpPage"
 
 function AppRoutes() {
   return (
