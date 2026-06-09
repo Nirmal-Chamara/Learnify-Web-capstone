@@ -4,6 +4,8 @@ import Button from "../components/common/Button"
 import LoadingSpinner from "../components/common/LoadingSpinner"
 import ErrorMessage from "../components/common/ErrorMessage"
 import { getProfile, updateProfile } from "../api/usersApi"
+import Avatar from "../components/common/Avatar"
+import profileImg from "../assets/icons/profile.png"
 
 const yearOptions = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
 
@@ -143,12 +145,10 @@ function ProfilePage() {
       <div className="bg-white rounded-2xl p-6 shadow-sm
         border border-gray-100">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-full bg-[#1A3D63] flex
-            items-center justify-center flex-shrink-0">
-            <span className="font-heading text-2xl font-bold text-white">
-              {formData.firstName.charAt(0)}{formData.lastName.charAt(0)}
-            </span>
-          </div>
+          {/* Avatar */}
+          <Avatar src={profileImg} name={`${formData.firstName} ${formData.lastName}`} size="lg" />
+
+          {/* Info */}
           <div className="flex-1">
             <h2 className="font-heading text-xl font-bold text-[#0A1931]">
               {formData.firstName} {formData.lastName}
