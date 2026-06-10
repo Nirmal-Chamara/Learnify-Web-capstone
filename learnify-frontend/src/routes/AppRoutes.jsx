@@ -21,6 +21,8 @@ import NotificationsPage from "../pages/NotificationsPage"
 import HelpPage from "../pages/HelpPage"
 import AdminAnalyticsPage from "../pages/admin/AdminAnalyticsPage"
 import AdminFeedbackDashboard from "../pages/admin/AdminFeedbackDashboard"
+import AdminUsersPage from "../pages/admin/AdminUsersPage"
+import AdminApprovalsPage from "../pages/admin/AdminApprovalsPage"
 
 function AppRoutes() {
   return (
@@ -111,9 +113,17 @@ function AppRoutes() {
             </PrivateRoute>
           } />
 
-          {/* Placeholder routes — full pages to be built when backend is ready */}
-          <Route path="/admin/users"     element={<PrivateRoute roles={["admin"]}><AdminAnalyticsPage /></PrivateRoute>} />
-          <Route path="/admin/approvals" element={<PrivateRoute roles={["admin"]}><AdminAnalyticsPage /></PrivateRoute>} />
+          <Route path="/admin/users" element={
+            <PrivateRoute roles={["admin"]}>
+              <AdminUsersPage />
+            </PrivateRoute>
+          } />
+
+          <Route path="/admin/approvals" element={
+            <PrivateRoute roles={["admin"]}>
+              <AdminApprovalsPage />
+            </PrivateRoute>
+          } />
           <Route path="/admin/system"    element={<PrivateRoute roles={["admin"]}><AdminAnalyticsPage /></PrivateRoute>} />
 
         </Route>
