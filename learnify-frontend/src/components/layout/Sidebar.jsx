@@ -55,8 +55,8 @@ function Sidebar({ isOpen }) {
 
   // Pick correct profile path based on role
   const profilePath =
-    role === "admin"  ? "/admin/dashboard" :
-    role === "mentor" ? "/mentor/profile"  :
+    role === "admin"  ? "/admin/profile"  :
+    role === "mentor" ? "/mentor/profile" :
     "/profile"
 
   function handleLogout() {

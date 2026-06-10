@@ -6,12 +6,23 @@ import Tooltip from "../common/Tooltip"
 import Badge from "../common/Badge"
 import { useAuth } from "../../hooks/useAuth"
 import profileImg from "../../assets/icons/profile.png"
+import AdminProfile from "../admin/AdminProfile"
 import {
   getNotifications,
   markAsRead,
   markAllAsRead,
 } from "../../api/notificationsApi"
 import api from "../../api/axiosInstance"
+
+function getRoleFromToken() {
+  try {
+    const token = localStorage.getItem("access_token")
+    if (!token) return null
+    return JSON.parse(atob(token.split(".")[1]))?.role || null
+  } catch {
+    return null
+  }
+}
 
 const pageTitles = {
   "/dashboard": "Dashboard",
@@ -23,8 +34,11 @@ const pageTitles = {
   "/profile": "Profile",
   "/notifications": "Notifications",
   "/mentor/resources": "My Resources",
-  "/mentor/profile":   "My Profile",
-  "/help":             "Help Requests",
+  "/mentor/profile":        "My Profile",
+  "/help":                  "Help Requests",
+  "/admin/profile":         "My Profile",
+  "/admin/profile/edit":    "Edit Profile",
+  "/admin/change-password": "Change Password",
 }
 
 // ── Notification Icon ─────────────────────────────────────
@@ -54,6 +68,9 @@ function Navbar({ onToggleSidebar }) {
   const dropdownRef = useRef(null)
   const profileDropdownRef = useRef(null)
 
+  const role = getRoleFromToken()
+  const isAdmin = role === "admin"
+
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount]     = useState(0)
   const [showDropdown, setShowDropdown]   = useState(false)
@@ -63,9 +80,10 @@ function Navbar({ onToggleSidebar }) {
   const profilePath = user?.role === "mentor" ? "/mentor/profile" : "/profile"
 
   // ── Fetch notifications and user on mount ────────────────
+  // Admin's user data is handled by AdminProfile component
   useEffect(() => {
     fetchNotifications()
-    fetchUser()
+    if (!isAdmin) fetchUser()
   }, [])
 
   async function fetchNotifications() {
@@ -264,81 +282,70 @@ function Navbar({ onToggleSidebar }) {
           )}
         </div>
 
-        {/* User / Profile Card Trigger */}
-        <div className="relative" ref={profileDropdownRef}>
-          <button
-            onClick={() => setShowProfileCard(!showProfileCard)}
-            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-white/5 transition-colors focus:outline-none text-left"
-          >
-            <div className="text-right hidden sm:block">
-              <p className="font-body text-sm font-medium text-white leading-tight">
-                {user.name || "User"}
-              </p>
-              <p className="font-body text-[11px] text-[#B3CFE5] mt-0.5 capitalize">
-                {user.role || "Student"}
-              </p>
-            </div>
-            <Avatar src={profileImg} name={user.name || "U"} color="accent" size="md" />
-          </button>
-
-          {/* Profile Card Dropdown */}
-          {showProfileCard && (
-            <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-4 overflow-hidden text-[#0A1931]">
-              {/* Profile Card Header */}
-              <div className="flex flex-col items-center text-center pb-4 border-b border-gray-100">
-                <Avatar src={profileImg} name={user.name || "U"} color="accent" size="lg" />
-                <h4 className="font-heading font-bold text-base mt-3 leading-tight">
+        {/* User / Profile — admin gets enhanced AdminProfile, others get standard card */}
+        {isAdmin ? (
+          <AdminProfile />
+        ) : (
+          <div className="relative" ref={profileDropdownRef}>
+            <button
+              onClick={() => setShowProfileCard(!showProfileCard)}
+              className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-white/5 transition-colors focus:outline-none text-left"
+            >
+              <div className="text-right hidden sm:block">
+                <p className="font-body text-sm font-medium text-white leading-tight">
                   {user.name || "User"}
-                </h4>
-                <span className="font-body text-xs text-gray-400 mt-0.5">
-                  {user.email || "user@learnify.com"}
-                </span>
-                <span className="mt-2.5 px-3 py-1 bg-[#F6FAFD] border border-[#B3CFE5]/30 rounded-full font-body text-[11px] font-semibold text-[#1A3D63] uppercase tracking-wider">
-                  {user.role || "student"}
-                </span>
+                </p>
+                <p className="font-body text-[11px] text-[#B3CFE5] mt-0.5 capitalize">
+                  {user.role || "Student"}
+                </p>
               </div>
+              <Avatar src={profileImg} name={user.name || "U"} color="accent" size="md" />
+            </button>
 
-              {/* Profile Card Menu */}
-              <div className="py-2 space-y-1">
-                <button
-                  onClick={() => {
-                    setShowProfileCard(false)
-                    navigate(profilePath)
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-gray-600 hover:bg-gray-50 hover:text-[#1A3D63] transition-colors text-left"
-                >
-                  <User size={16} />
-                  <span>My Profile</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowProfileCard(false)
-                    navigate("/notifications")
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-gray-600 hover:bg-gray-50 hover:text-[#1A3D63] transition-colors text-left"
-                >
-                  <Bell size={16} />
-                  <span>Notifications</span>
-                </button>
+            {/* Profile Card Dropdown */}
+            {showProfileCard && (
+              <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 p-4 overflow-hidden text-[#0A1931]">
+                <div className="flex flex-col items-center text-center pb-4 border-b border-gray-100">
+                  <Avatar src={profileImg} name={user.name || "U"} color="accent" size="lg" />
+                  <h4 className="font-heading font-bold text-base mt-3 leading-tight">
+                    {user.name || "User"}
+                  </h4>
+                  <span className="font-body text-xs text-gray-400 mt-0.5">
+                    {user.email || "user@learnify.com"}
+                  </span>
+                  <span className="mt-2.5 px-3 py-1 bg-[#F6FAFD] border border-[#B3CFE5]/30 rounded-full font-body text-[11px] font-semibold text-[#1A3D63] uppercase tracking-wider">
+                    {user.role || "student"}
+                  </span>
+                </div>
+                <div className="py-2 space-y-1">
+                  <button
+                    onClick={() => { setShowProfileCard(false); navigate(profilePath) }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-gray-600 hover:bg-gray-50 hover:text-[#1A3D63] transition-colors text-left"
+                  >
+                    <User size={16} />
+                    <span>My Profile</span>
+                  </button>
+                  <button
+                    onClick={() => { setShowProfileCard(false); navigate("/notifications") }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-gray-600 hover:bg-gray-50 hover:text-[#1A3D63] transition-colors text-left"
+                  >
+                    <Bell size={16} />
+                    <span>Notifications</span>
+                  </button>
+                </div>
+                <div className="pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => { setShowProfileCard(false); logout(); navigate("/login") }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors text-left font-medium"
+                  >
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </div>
-
-              {/* Divider and Logout */}
-              <div className="pt-2 border-t border-gray-100">
-                <button
-                  onClick={() => {
-                    setShowProfileCard(false)
-                    logout()
-                    navigate("/login")
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-body text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors text-left font-medium"
-                >
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
       </div>
     </header>
