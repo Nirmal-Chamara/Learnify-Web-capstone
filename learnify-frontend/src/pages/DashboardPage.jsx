@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
-import { Send } from "lucide-react"
-import Badge from "../components/common/Badge"
+import { Send, Flame, Zap, Target, Clock } from "lucide-react"
 import Button from "../components/common/Button"
 import LoadingSpinner from "../components/common/LoadingSpinner"
 import ErrorMessage from "../components/common/ErrorMessage"
@@ -16,21 +15,16 @@ function buildCalendar(deadlines) {
   const today     = now.getDate()
   const monthName = now.toLocaleString("default", { month: "long" })
 
-  // Get deadline dates as a Set for quick lookup
   const deadlineDates = new Set(
     deadlines.map(d => new Date(d.due_date).getDate())
   )
 
-  // First day of month (0=Sun, 1=Mon...)
-  // We want Mon-based so adjust
   const firstDay = new Date(year, month, 1).getDay()
   const adjusted = firstDay === 0 ? 6 : firstDay - 1
-
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
-  // Build weeks array
-  const dates  = []
-  let   week   = Array(adjusted).fill(null)
+  const dates = []
+  let   week  = Array(adjusted).fill(null)
 
   for (let d = 1; d <= daysInMonth; d++) {
     week.push(d)
@@ -47,8 +41,26 @@ function buildCalendar(deadlines) {
   return { monthName, today, deadlineDates, dates }
 }
 
+// ── Circular progress ring ────────────────────────────────
+function RingProgress({ pct = 0, size = 64, stroke = 6, color = "#4A7FA7" }) {
+  const r       = (size - stroke) / 2
+  const circ    = 2 * Math.PI * r
+  const dash    = (pct / 100) * circ
+  return (
+    <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+      <circle cx={size / 2} cy={size / 2} r={r}
+        fill="none" stroke="#E8F0F7" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r}
+        fill="none" stroke={color} strokeWidth={stroke}
+        strokeDasharray={`${dash} ${circ}`}
+        strokeLinecap="round"
+        style={{ transition: "stroke-dasharray 0.8s ease" }} />
+    </svg>
+  )
+}
+
 export default function DashboardPage() {
-  const { user }          = useAuth()
+  const { user }              = useAuth()
   const [message, setMessage] = useState("")
 
   // ── State ──────────────────────────────────────────────
@@ -56,6 +68,12 @@ export default function DashboardPage() {
   const [error, setError]       = useState("")
   const [stats, setStats]       = useState({
     subjects: 0, tasks_today: 0, completed: 0
+  })
+  const [analytics, setAnalytics] = useState({
+    study_streak_days: 0,
+    focus_score:       0,
+    semester_goal_pct: 0,
+    total_study_hours: 0,
   })
   const [weeklyData, setWeeklyData]       = useState([])
   const [deadlines, setDeadlines]         = useState([])
@@ -69,6 +87,12 @@ export default function DashboardPage() {
         const response = await getDashboardStats()
         const data     = response.data
         setStats(data.stats)
+        setAnalytics(data.analytics || {
+          study_streak_days: 0,
+          focus_score:       0,
+          semester_goal_pct: 0,
+          total_study_hours: 0,
+        })
         setWeeklyData(data.weekly_chart)
         setDeadlines(data.deadlines)
         setScheduled(data.scheduled_subjects)
@@ -88,14 +112,56 @@ export default function DashboardPage() {
     { label: "Completed",   value: String(stats.completed).padStart(2, "0")   },
   ]
 
-  // ── Build calendar ─────────────────────────────────────
+  // ── Analytics cards config ─────────────────────────────
+  const analyticsCards = [
+    {
+      id:      "streak",
+      label:   "Study Streak",
+      value:   analytics.study_streak_days,
+      unit:    analytics.study_streak_days === 1 ? "day" : "days",
+      icon:    Flame,
+      color:   "#F97316",
+      bg:      "from-orange-50 to-orange-100/60",
+      ring:    null,           // no ring — show fire icon + big number
+    },
+    {
+      id:      "focus",
+      label:   "Focus Score",
+      value:   analytics.focus_score,
+      unit:    "%",
+      icon:    Zap,
+      color:   "#4A7FA7",
+      bg:      "from-blue-50 to-blue-100/60",
+      ring:    analytics.focus_score,
+    },
+    {
+      id:      "goal",
+      label:   "Semester Goal",
+      value:   analytics.semester_goal_pct,
+      unit:    "%",
+      icon:    Target,
+      color:   "#10B981",
+      bg:      "from-emerald-50 to-emerald-100/60",
+      ring:    analytics.semester_goal_pct,
+    },
+    {
+      id:      "hours",
+      label:   "Total Study Hours",
+      value:   analytics.total_study_hours,
+      unit:    "hrs",
+      icon:    Clock,
+      color:   "#7C5CBF",
+      bg:      "from-purple-50 to-purple-100/60",
+      ring:    null,
+    },
+  ]
+
+  // ── Calendar ───────────────────────────────────────────
   const { monthName, today, deadlineDates, dates } = buildCalendar(deadlines)
   const calendarDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-  // ── Get first name from user ───────────────────────────
   const firstName = user?.name?.split(" ")[0] || "there"
 
-  // ── Loading state ──────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -129,6 +195,85 @@ export default function DashboardPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      {/* ── Analytics Row ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {analyticsCards.map((card) => {
+          const Icon = card.icon
+          return (
+            <div
+              key={card.id}
+              className={`bg-gradient-to-br ${card.bg} rounded-2xl p-4
+                shadow-md border border-white/60 flex flex-col gap-3
+                hover:shadow-lg transition-shadow duration-200`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <p className="font-body text-xs font-semibold text-gray-500
+                  uppercase tracking-wide">
+                  {card.label}
+                </p>
+                <span
+                  className="w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: `${card.color}20` }}
+                >
+                  <Icon size={14} style={{ color: card.color }} />
+                </span>
+              </div>
+
+              {/* Value + optional ring */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span
+                    className="font-heading text-3xl font-bold"
+                    style={{ color: card.color }}
+                  >
+                    {card.value}
+                  </span>
+                  <span className="font-body text-xs text-gray-400 ml-1">
+                    {card.unit}
+                  </span>
+                </div>
+
+                {card.ring !== null && (
+                  <div className="relative flex items-center justify-center">
+                    <RingProgress
+                      pct={Math.min(card.ring, 100)}
+                      size={52}
+                      stroke={5}
+                      color={card.color}
+                    />
+                    <span
+                      className="absolute font-body text-[10px] font-bold"
+                      style={{ color: card.color, transform: "none" }}
+                    >
+                      {Math.round(card.ring)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Streak flame bar — only for streak */}
+              {card.id === "streak" && (
+                <div className="flex gap-1 mt-1">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 h-1 rounded-full transition-all duration-300"
+                      style={{
+                        backgroundColor:
+                          i < Math.min(analytics.study_streak_days, 7)
+                            ? card.color
+                            : "#FED7AA",
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {/* ── Middle Row ── */}
@@ -190,7 +335,7 @@ export default function DashboardPage() {
         {/* Right Column */}
         <div className="space-y-4">
 
-          {/* Deadlines Calendar — real current month */}
+          {/* Deadlines Calendar */}
           <div className="bg-white rounded-2xl p-4 shadow-lg
             border border-white/5">
             <h3 className="font-heading text-sm font-semibold
@@ -202,7 +347,6 @@ export default function DashboardPage() {
               {monthName}
             </p>
 
-            {/* Day Headers */}
             <div className="grid grid-cols-7 mb-1">
               {calendarDays.map((day) => (
                 <div key={day}
@@ -213,7 +357,6 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Dates */}
             {dates.map((week, wi) => (
               <div key={wi} className="grid grid-cols-7">
                 {week.map((date, di) => (
@@ -236,7 +379,6 @@ export default function DashboardPage() {
               </div>
             ))}
 
-            {/* Legend */}
             <div className="flex items-center gap-3 mt-3 pt-2
               border-t border-gray-100">
               <div className="flex items-center gap-1">
@@ -308,7 +450,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Chat Input */}
         <div className="flex items-center gap-3 bg-white rounded-xl
           px-4 py-3 border border-[#4A7FA7]/30">
           <input
