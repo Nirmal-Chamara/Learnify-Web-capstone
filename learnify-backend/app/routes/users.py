@@ -7,7 +7,6 @@ from app.utils.response_utils import success_response, error_response
 bp = Blueprint("users", __name__)
 
 
-# ── GET /api/users/profile ────────────────────────────────
 @bp.route("/profile", methods=["GET"])
 @jwt_required()
 def get_profile():
@@ -20,7 +19,6 @@ def get_profile():
     return success_response(data=user.to_dict())
 
 
-# ── PATCH /api/users/profile ──────────────────────────────
 @bp.route("/profile", methods=["PATCH"])
 @jwt_required()
 def update_profile():
@@ -32,17 +30,23 @@ def update_profile():
 
     data = request.get_json()
 
-    # All fields that can be updated
+    # ── All updatable fields for both roles ───────────────
     allowed_fields = [
+        # Common fields
         "name",
         "phone",
         "bio",
-        "student_id",
         "university",
-        "faculty",
-        "year",
         "avatar_url",
         "role",
+        # Student fields
+        "student_id",
+        "faculty",
+        "year",
+        # Mentor fields
+        "department",
+        "subject",
+        "experience",
     ]
 
     updated = False
@@ -66,7 +70,6 @@ def update_profile():
     )
 
 
-# ── PATCH /api/users/change-password ─────────────────────
 @bp.route("/change-password", methods=["PATCH"])
 @jwt_required()
 def change_password():
@@ -110,7 +113,6 @@ def change_password():
     return success_response(message="Password changed successfully")
 
 
-# ── GET /api/users/<id> ───────────────────────────────────
 @bp.route("/<int:user_id>", methods=["GET"])
 @jwt_required()
 def get_user(user_id):
