@@ -1,49 +1,13 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight, Plus, Sparkles } from "lucide-react"
 import { FaBookOpen, FaCheckCircle, FaClock, FaBullseye } from "react-icons/fa"
 import ProgressBar from "../components/common/ProgressBar"
 import Button from "../components/common/Button"
 import Badge from "../components/common/Badge"
+import LoadingSpinner from "../components/common/LoadingSpinner"
+import { getTasks, getSchedulerStats, getTimetable, generateTimetable } from "../api/schedulerApi"
 
-// ── Data ──────────────────────────────────────────────────
-const statsData = [
-  {
-    icon: FaBookOpen,
-    iconColor: "text-blue-500",
-    iconBg: "bg-blue-50",
-    label: "Study Hours This Week",
-    value: "24.5h",
-    sub: "↑ 3.2h vs last week",
-    subColor: "text-green-500",
-  },
-  {
-    icon: FaCheckCircle,
-    iconColor: "text-green-500",
-    iconBg: "bg-green-50",
-    label: "Sessions Completed",
-    value: "18",
-    sub: "86% completion rate",
-    subColor: "text-gray-400",
-  },
-  {
-    icon: FaClock,
-    iconColor: "text-orange-500",
-    iconBg: "bg-orange-50",
-    label: "Upcoming Deadlines",
-    value: "4",
-    sub: "2 due this week",
-    subColor: "text-gray-400",
-  },
-  {
-    icon: FaBullseye,
-    iconColor: "text-purple-500",
-    iconBg: "bg-purple-50",
-    label: "Focus Score",
-    value: "91%",
-    sub: "Excellent consistency",
-    subColor: "text-green-500",
-  },
-]
+// ── statsData is now built dynamically from API (see dynamicStats below)
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 const timeSlots = ["8:00 AM", "10:00 AM", "12:00 PM", "1:00 PM", "3:00 PM", "5:00 PM"]
@@ -174,12 +138,7 @@ const aiTips = [
   },
 ]
 
-const upcomingDeadlines = [
-  { title: "Mathematics Mock Exam", detail: "Chapter 7 — Statistics", days: 3 },
-  { title: "Physics Assignment", detail: "Thermodynamics report", days: 5 },
-  { title: "Chemistry Lab Report", detail: "Organic reactions write-up", days: 8 },
-  { title: "English Essay Draft", detail: "Argumentative essay - 1200w", days: 12 },
-]
+// upcomingDeadlines — loaded from API
 
 const legendItems = [
   { label: "Mathematics", color: "bg-[#0D2440]" },
@@ -193,8 +152,99 @@ const legendItems = [
 // ── Component ─────────────────────────────────────────────
 function SchedulerPage() {
   const [intensity, setIntensity] = useState("Balanced (4–5 hrs/day)")
-  const [subject, setSubject] = useState("Mathematics")
-  const [examDate, setExamDate] = useState("2026-05-20")
+  const [subject, setSubject]     = useState("Mathematics")
+  const [examDate, setExamDate]   = useState("")
+  const [generating, setGenerating] = useState(false)
+  const [generateMsg, setGenerateMsg] = useState(null)
+
+  // ── Live API state ────────────────────────────────────
+  const [apiStats, setApiStats]           = useState(null)
+  const [apiTasks, setApiTasks]           = useState([])
+  const [apiTimetable, setApiTimetable]   = useState([])
+  const [statsLoading, setStatsLoading]   = useState(true)
+
+  useEffect(() => {
+    async function loadSchedulerData() {
+      try {
+        setStatsLoading(true)
+        const [statsRes, tasksRes, timetableRes] = await Promise.allSettled([
+          getSchedulerStats(),
+          getTasks(),
+          getTimetable(),
+        ])
+        if (statsRes.status === "fulfilled") setApiStats(statsRes.value.data)
+        if (tasksRes.status === "fulfilled") setApiTasks(tasksRes.value.data?.tasks || [])
+        if (timetableRes.status === "fulfilled") setApiTimetable(timetableRes.value.data?.sessions || [])
+      } catch {}
+      finally { setStatsLoading(false) }
+    }
+    loadSchedulerData()
+  }, [])
+
+  // Reload timetable data (called after AI generation)
+  async function reloadTimetable() {
+    try {
+      const [statsRes, tasksRes, timetableRes] = await Promise.allSettled([
+        getSchedulerStats(),
+        getTasks(),
+        getTimetable(),
+      ])
+      if (statsRes.status === "fulfilled") setApiStats(statsRes.value.data)
+      if (tasksRes.status === "fulfilled") setApiTasks(tasksRes.value.data?.tasks || [])
+      if (timetableRes.status === "fulfilled") setApiTimetable(timetableRes.value.data?.sessions || [])
+    } catch {}
+  }
+
+  // AI generate handler
+  async function handleGenerate() {
+    if (generating) return
+    setGenerating(true)
+    setGenerateMsg(null)
+    try {
+      const res = await generateTimetable({
+        intensity,
+        focus_subject: subject,
+        exam_date: examDate,
+      })
+      const count = res?.data?.sessions_created || 0
+      setGenerateMsg({ type: "success", text: `✅ ${count} sessions generated for this week!` })
+      await reloadTimetable()
+    } catch (err) {
+      setGenerateMsg({ type: "error", text: "❌ Generation failed. Please try again." })
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  // Upcoming deadlines: tasks not done, sorted by due_date
+  const upcomingDeadlines = apiTasks
+    .filter(t => t.status !== "done")
+    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+    .slice(0, 5)
+    .map(t => {
+      const daysLeft = Math.ceil(
+        (new Date(t.due_date) - new Date()) / (1000 * 60 * 60 * 24)
+      )
+      return {
+        title:  t.title,
+        detail: t.subject_name,
+        days:   Math.max(0, daysLeft),
+      }
+    })
+
+  // Today's sessions from timetable
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const todaysSessions = apiTimetable
+    .filter(s => s.start_time?.slice(0, 10) === todayStr)
+    .map(s => ({
+      subject: s.subject_name,
+      detail:  s.session_type,
+      time:    new Date(s.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      status:  s.completed ? "Done" : "Upcoming",
+      statusColor: s.completed ? "text-green-500" : "text-gray-400",
+      dot:     s.color_hex ? "" : "bg-blue-500",
+      color:   s.color_hex,
+    }))
 
   // Timetable study status logs state (initialised with logs to sum to exactly 24.5h and 18 completed sessions)
   const [timetableLogs, setTimetableLogs] = useState({
@@ -251,9 +301,17 @@ function SchedulerPage() {
     setIsModalOpen(false)
   }
 
-  // Dynamic header stats calculations
-  const totalHours = Object.values(timetableLogs).reduce((sum, log) => sum + log.hours, 0)
-  const completedSessionsCount = Object.values(timetableLogs).filter(log => log.hours > 0).length
+  // ── Dynamic stats (hybrid: API when available, local logs fallback) ──
+  const completedSessionsCount = apiStats
+    ? apiStats.sessions_completed
+    : Object.values(timetableLogs).filter(log => log.hours > 0).length
+  const totalHours = apiStats
+    ? apiStats.weekly_hours
+    : Object.values(timetableLogs).reduce((sum, log) => sum + log.hours, 0)
+  const focusScore = apiStats ? apiStats.focus_score : 91
+  const upcomingCount = apiStats ? apiStats.upcoming_deadlines : 4
+  const weekDeadlines = apiStats ? apiStats.week_deadlines : 2
+  const completionRate = apiStats ? apiStats.completion_rate : 86
 
   const dynamicStats = [
     {
@@ -261,8 +319,8 @@ function SchedulerPage() {
       iconColor: "text-blue-500",
       iconBg: "bg-blue-50",
       label: "Study Hours This Week",
-      value: `${totalHours.toFixed(1)}h`,
-      sub: "↑ 3.2h vs last week",
+      value: statsLoading ? "..." : `${totalHours.toFixed(1)}h`,
+      sub: "this week",
       subColor: "text-green-500",
     },
     {
@@ -270,8 +328,8 @@ function SchedulerPage() {
       iconColor: "text-green-500",
       iconBg: "bg-green-50",
       label: "Sessions Completed",
-      value: `${completedSessionsCount}`,
-      sub: `${Math.round((completedSessionsCount / 22) * 100)}% completion rate`,
+      value: statsLoading ? "..." : `${completedSessionsCount}`,
+      sub: `${completionRate}% completion rate`,
       subColor: "text-gray-400",
     },
     {
@@ -279,8 +337,8 @@ function SchedulerPage() {
       iconColor: "text-orange-500",
       iconBg: "bg-orange-50",
       label: "Upcoming Deadlines",
-      value: "4",
-      sub: "2 due this week",
+      value: statsLoading ? "..." : `${upcomingCount}`,
+      sub: `${weekDeadlines} due this week`,
       subColor: "text-gray-400",
     },
     {
@@ -288,9 +346,9 @@ function SchedulerPage() {
       iconColor: "text-purple-500",
       iconBg: "bg-purple-50",
       label: "Focus Score",
-      value: `${completedSessionsCount > 0 ? Math.min(100, Math.round(91 * (completedSessionsCount / 18))) : 0}%`,
-      sub: "Excellent consistency",
-      subColor: "text-green-500",
+      value: statsLoading ? "..." : `${focusScore}%`,
+      sub: focusScore >= 80 ? "Excellent consistency" : focusScore >= 60 ? "Good progress" : "Keep going!",
+      subColor: focusScore >= 80 ? "text-green-500" : "text-gray-400",
     },
   ]
 
@@ -549,12 +607,21 @@ function SchedulerPage() {
                   className="w-full bg-[#0A1931] text-white font-body text-xs px-3 py-2.5 rounded-lg border border-white/10 focus:outline-none focus:border-[#4A7FA7] transition-colors"
                 />
               </div>
+              {generateMsg && (
+                <p className={`font-body text-[10px] text-center mt-1 ${
+                  generateMsg.type === "success" ? "text-green-400" : "text-red-400"
+                }`}>{generateMsg.text}</p>
+              )}
               <button
-                onClick={() => {}}
-                className="w-full bg-[#EAF0F6] hover:bg-[#CBDDF0] text-[#0D2440] font-body text-xs font-bold py-2.5 rounded-lg shadow-sm transition-colors duration-200 flex items-center justify-center gap-1.5 border-none"
+                onClick={handleGenerate}
+                disabled={generating}
+                className="w-full bg-[#EAF0F6] hover:bg-[#CBDDF0] text-[#0D2440] font-body text-xs font-bold py-2.5 rounded-lg shadow-sm transition-colors duration-200 flex items-center justify-center gap-1.5 border-none disabled:opacity-60"
               >
-                <Sparkles size={14} />
-                Generate My Schedule
+                {generating ? (
+                  <><div className="w-3 h-3 border-2 border-[#0D2440] border-t-transparent rounded-full animate-spin" /> Generating...</>
+                ) : (
+                  <><Sparkles size={14} /> Generate My Schedule</>
+                )}
               </button>
             </div>
           </div>
@@ -572,30 +639,38 @@ function SchedulerPage() {
               </span>
             </div>
             <div className="space-y-3">
-              {todaysSessions.map((session, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <span className={`w-2 h-2 rounded-full mt-1.5
-                    flex-shrink-0 ${session.dot}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-body text-xs text-[#0A1931]
-                      font-semibold leading-tight">
-                      {session.subject}
-                    </p>
-                    <p className="font-body text-[10px] text-gray-400">
-                      {session.detail}
-                    </p>
+              {todaysSessions.length === 0 ? (
+                <p className="font-body text-xs text-gray-400 text-center py-4">
+                  No sessions scheduled for today
+                </p>
+              ) : (
+                todaysSessions.map((session, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                      style={{ backgroundColor: session.color || "#4A7FA7" }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body text-xs text-[#0A1931]
+                        font-semibold leading-tight">
+                        {session.subject}
+                      </p>
+                      <p className="font-body text-[10px] text-gray-400">
+                        {session.detail}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-body text-[10px] text-gray-400">
+                        {session.time}
+                      </p>
+                      <p className={`font-body text-[10px] font-semibold
+                        ${session.statusColor}`}>
+                        {session.status}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-body text-[10px] text-gray-400">
-                      {session.time}
-                    </p>
-                    <p className={`font-body text-[10px] font-semibold
-                      ${session.statusColor}`}>
-                      {session.status}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -661,29 +736,35 @@ function SchedulerPage() {
             Upcoming Deadlines
           </h3>
           <div className="space-y-3">
-            {upcomingDeadlines.map((item, i) => (
-              <div key={i} className="flex items-start justify-between
-                border-l-4 border-[#1A3D63] pl-3 py-1">
-                <div>
-                  <p className="font-body text-xs font-semibold
-                    text-[#0A1931]">
-                    {item.title}
-                  </p>
-                  <p className="font-body text-[10px] text-gray-400">
-                    {item.detail}
-                  </p>
+            {upcomingDeadlines.length === 0 ? (
+              <p className="font-body text-xs text-gray-400 text-center py-4">
+                No upcoming deadlines 🎉
+              </p>
+            ) : (
+              upcomingDeadlines.map((item, i) => (
+                <div key={i} className="flex items-start justify-between
+                  border-l-4 border-[#1A3D63] pl-3 py-1">
+                  <div>
+                    <p className="font-body text-xs font-semibold
+                      text-[#0A1931]">
+                      {item.title}
+                    </p>
+                    <p className="font-body text-[10px] text-gray-400">
+                      {item.detail}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-2">
+                    <p className="font-heading text-lg font-bold
+                      text-[#1A3D63]">
+                      {item.days}
+                    </p>
+                    <p className="font-body text-[10px] text-gray-400">
+                      days left
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right flex-shrink-0 ml-2">
-                  <p className="font-heading text-lg font-bold
-                    text-[#1A3D63]">
-                    {item.days}
-                  </p>
-                  <p className="font-body text-[10px] text-gray-400">
-                    days left
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
