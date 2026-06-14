@@ -52,9 +52,27 @@ with app.app_context():
             status="active"
         )
         db.session.add(student)
+        db.session.commit()
         print("[OK] Seeded Student Account: student@learnify.com / password")
     else:
         print("Student account already exists.")
+
+    # Ensure profile exists for seeded student
+    from sqlalchemy import text
+    profile = db.session.execute(
+        text("SELECT id FROM student_profiles WHERE user_id = :uid"),
+        {"uid": student.id}
+    ).fetchone()
+    if not profile:
+        db.session.execute(
+            text(
+                "INSERT INTO student_profiles (user_id, available_hours_per_week, study_streak_days, total_points, semester_goal_pct) "
+                "VALUES (:uid, 10, 0, 0, 0.0)"
+            ),
+            {"uid": student.id}
+        )
+        db.session.commit()
+        print("[OK] Seeded Student Profile for student@learnify.com")
 
     try:
         db.session.commit()

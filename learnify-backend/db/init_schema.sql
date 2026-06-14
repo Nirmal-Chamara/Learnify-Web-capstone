@@ -494,6 +494,19 @@ CREATE TABLE admin_audit_logs (
     CONSTRAINT fk_aal_admin FOREIGN KEY (admin_id) REFERENCES users(id)
 ) ENGINE = InnoDB;
 
+-- blocklist for revoked JWTs
+CREATE TABLE token_blocklist (
+    id         INT          NOT NULL AUTO_INCREMENT,
+    jti        VARCHAR(36)  NOT NULL,
+    token_type VARCHAR(10)  NOT NULL DEFAULT 'access',
+    revoked_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_id    INT          NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_tb_jti (jti),
+    INDEX idx_tb_jti (jti)
+) ENGINE = InnoDB;
+
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 

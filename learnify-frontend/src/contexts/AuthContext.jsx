@@ -40,7 +40,12 @@ export function AuthProvider({ children }) {
   async function logout() {
     // Revoke tokens server-side before clearing client state
     try {
-      await api.post("/auth/logout")
+      const refreshToken = localStorage.getItem("refresh_token")
+      await api.post("/auth/logout", {}, {
+        headers: {
+          "X-Refresh-Token": refreshToken || ""
+        }
+      })
     } catch {
       // Even if the server call fails, still clear the client session
     }

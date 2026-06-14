@@ -19,6 +19,21 @@ def register_user(name, email, password, role="student"):
     )
     db.session.add(user)
     db.session.commit()
+
+    if role == "student":
+        try:
+            from sqlalchemy import text
+            db.session.execute(
+                text(
+                    "INSERT INTO student_profiles (user_id, available_hours_per_week, study_streak_days, total_points, semester_goal_pct) "
+                    "VALUES (:uid, 0, 0, 0, 0.0)"
+                ),
+                {"uid": user.id}
+            )
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     return user, None
 
 
@@ -87,6 +102,20 @@ def google_auth_user(google_token):
             )
             db.session.add(user)
             db.session.commit()
+
+            try:
+                from sqlalchemy import text
+                db.session.execute(
+                    text(
+                        "INSERT INTO student_profiles (user_id, available_hours_per_week, study_streak_days, total_points, semester_goal_pct) "
+                        "VALUES (:uid, 0, 0, 0, 0.0)"
+                    ),
+                    {"uid": user.id}
+                )
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
             return user, True, None  # True = new user
 
     except Exception as e:
