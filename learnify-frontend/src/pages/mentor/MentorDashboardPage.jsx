@@ -12,8 +12,13 @@ export default function MentorDashboardPage() {
   const navigate = useNavigate()
 
   // Dynamic user details
-  const mentorName = user ? `${user.firstName} ${user.lastName}` : "Dr. James Davis"
-  const mentorInitials = user ? `${user.firstName[0]}${user.lastName[0]}` : "JD"
+  const mentorName = user
+  ? `${user.firstName || ""} ${user.lastName || ""}`
+  : "Dr. James Davis"
+
+  const mentorInitials = user
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`
+    : "JD"
 
   // Stateful Availability & Status
   const [status, setStatus] = useState("Online")

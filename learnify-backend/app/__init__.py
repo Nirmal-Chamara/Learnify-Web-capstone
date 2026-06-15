@@ -22,33 +22,24 @@ def create_app(config_name="development"):
     db.init_app(app)
     jwt.init_app(app)
     migrate.init_app(app, db)
-
-    # ── JWT Blocklist check ──
-    # Called on every @jwt_required() route to reject revoked tokens
-    @jwt.token_in_blocklist_loader
-    def check_if_token_revoked(jwt_header, jwt_payload):
-        jti = jwt_payload["jti"]
-        return db.session.query(
-            TokenBlocklist.query.filter_by(jti=jti).exists()
-        ).scalar()
     bcrypt.init_app(app)
-    cors.init_app(app, resources={
-        r"/api/*": {
-            "origins": [
-                "http://localhost:3000",
-                "http://127.0.0.1:3000"
-            ],
-            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True
-        }
-    })
 
-    # Fix Google OAuth popup issue
+    # ── CORS — allow frontend requests ────────────────────
+    cors.init_app(app,
+        resources={r"/api/*": {"origins": "*"}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    )
+
+    # ── Fix Google OAuth popup issue ──────────────────────
     @app.after_request
     def add_headers(response):
-        response.headers["Cross-Origin-Opener-Policy"] = "unsafe-none"
+        response.headers["Cross-Origin-Opener-Policy"]  = "unsafe-none"
         response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
+        response.headers["Access-Control-Allow-Origin"]  = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
         return response
 
     # Register blueprints
@@ -66,44 +57,4 @@ def create_app(config_name="development"):
     app.register_blueprint(progress.bp,      url_prefix="/api/progress")
 
     register_error_handlers(app)
-
-    # ── Custom Secure CLI Commands ──
-    import click
-    @app.cli.command("create-admin")
-    @click.option("--email", prompt="Admin Email", help="The email address of the administrator.")
-    @click.password_option(prompt="Admin Password", help="The password of the administrator.")
-    def create_admin_cmd(email, password):
-        """Create a new administrator account securely."""
-        from app.models.user import User
-        from app.extensions import db, bcrypt
-
-        if not email or "@" not in email:
-            click.echo("Error: Invalid email address format.")
-            return
-
-        existing = User.query.filter_by(email=email).first()
-        if existing:
-            click.echo(f"Error: Email {email} is already registered.")
-            return
-
-        if len(password) < 8:
-            click.echo("Error: Password must be at least 8 characters long.")
-            return
-
-        try:
-            password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
-            admin = User(
-                name="System Administrator",
-                email=email,
-                password_hash=password_hash,
-                role="admin",
-                status="active"
-            )
-            db.session.add(admin)
-            db.session.commit()
-            click.echo(f"[OK] Administrator account {email} created successfully!")
-        except Exception as e:
-            db.session.rollback()
-            click.echo(f"[ERROR] Failed to create administrator: {e}")
-
     return app
