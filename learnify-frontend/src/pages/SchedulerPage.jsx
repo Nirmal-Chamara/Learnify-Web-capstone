@@ -5,7 +5,7 @@ import ProgressBar from "../components/common/ProgressBar"
 import Button from "../components/common/Button"
 import Badge from "../components/common/Badge"
 import LoadingSpinner from "../components/common/LoadingSpinner"
-import { getTasks, getSchedulerStats, getTimetable, generateTimetable } from "../api/schedulerApi"
+import { getTasks, getSchedulerStats, getTimetable, generateTimetable, createTask, updateTaskStatus } from "../api/schedulerApi"
 import { getSubjects } from "../api/subjectsApi"
 import { endSession } from "../api/trackingApi"
 
@@ -244,6 +244,7 @@ function SchedulerPage() {
         (new Date(t.due_date) - new Date()) / (1000 * 60 * 60 * 24)
       )
       return {
+        id:     t.id,
         title:  t.title,
         detail: t.subject_name,
         days:   Math.max(0, daysLeft),
@@ -309,6 +310,53 @@ function SchedulerPage() {
   const [tempHours, setTempHours] = useState(2.0)
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveError, setSaveError] = useState(null)
+
+  // Task Creation Modal States
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+  const [taskTitle, setTaskTitle] = useState("")
+  const [taskSubjectId, setTaskSubjectId] = useState("")
+  const [taskDueDate, setTaskDueDate] = useState("")
+  const [taskType, setTaskType] = useState("assignment")
+  const [taskCreateLoading, setTaskCreateLoading] = useState(false)
+  const [taskCreateError, setTaskCreateError] = useState(null)
+
+  // Submit task creation handler
+  async function handleCreateTaskSubmit() {
+    if (!taskTitle.trim()) {
+      setTaskCreateError("Task title is required.")
+      return
+    }
+    if (!taskSubjectId) {
+      setTaskCreateError("Subject is required.")
+      return
+    }
+    try {
+      setTaskCreateLoading(true)
+      setTaskCreateError(null)
+      await createTask({
+        title: taskTitle.trim(),
+        subject_id: taskSubjectId,
+        due_date: taskDueDate,
+        type: taskType
+      })
+      await reloadTimetable()
+      setIsTaskModalOpen(false)
+    } catch (err) {
+      setTaskCreateError("Failed to create task on server.")
+    } finally {
+      setTaskCreateLoading(false)
+    }
+  }
+
+  // Toggle task status checkbox handler
+  async function handleToggleTaskStatus(taskId) {
+    try {
+      await updateTaskStatus(taskId, "done")
+      await reloadTimetable()
+    } catch (err) {
+      alert("Failed to update task status.")
+    }
+  }
 
   // Open modal handler
   function handleOpenModal(time, day, subject, detail, id) {
@@ -802,12 +850,25 @@ function SchedulerPage() {
         </div>
 
         {/* Upcoming Deadlines */}
-        <div className="bg-white rounded-2xl p-5 shadow-lg
-          border border-gray-100">
-          <h3 className="font-heading text-sm font-semibold
-            text-[#0A1931] mb-4">
-            Upcoming Deadlines
-          </h3>
+        <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-heading text-sm font-semibold text-[#0A1931]">
+              Upcoming Deadlines
+            </h3>
+            <button
+              onClick={() => {
+                setTaskTitle("")
+                setTaskSubjectId(allSubjects[0]?.id || "")
+                setTaskDueDate(new Date().toISOString().slice(0, 10))
+                setTaskType("assignment")
+                setTaskCreateError(null)
+                setIsTaskModalOpen(true)
+              }}
+              className="flex items-center gap-1 text-[11px] font-body font-bold text-[#4A7FA7] hover:text-[#0A1931] bg-transparent border-none cursor-pointer"
+            >
+              <Plus size={12} /> Add Task
+            </button>
+          </div>
           <div className="space-y-3">
             {upcomingDeadlines.length === 0 ? (
               <p className="font-body text-xs text-gray-400 text-center py-4">
@@ -815,20 +876,24 @@ function SchedulerPage() {
               </p>
             ) : (
               upcomingDeadlines.map((item, i) => (
-                <div key={i} className="flex items-start justify-between
-                  border-l-4 border-[#1A3D63] pl-3 py-1">
-                  <div>
-                    <p className="font-body text-xs font-semibold
-                      text-[#0A1931]">
-                      {item.title}
-                    </p>
-                    <p className="font-body text-[10px] text-gray-400">
-                      {item.detail}
-                    </p>
+                <div key={i} className="flex items-start justify-between border-l-4 border-[#1A3D63] pl-3 py-1">
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      onChange={() => handleToggleTaskStatus(item.id)}
+                      className="w-4 h-4 rounded text-[#1A3D63] focus:ring-[#4A7FA7] border-gray-300 cursor-pointer mt-0.5"
+                    />
+                    <div>
+                      <p className="font-body text-xs font-semibold text-[#0A1931]">
+                        {item.title}
+                      </p>
+                      <p className="font-body text-[10px] text-gray-400">
+                        {item.detail}
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-2">
-                    <p className="font-heading text-lg font-bold
-                      text-[#1A3D63]">
+                    <p className="font-heading text-lg font-bold text-[#1A3D63]">
                       {item.days}
                     </p>
                     <p className="font-body text-[10px] text-gray-400">
@@ -1002,6 +1067,95 @@ function SchedulerPage() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ── 5. Add Task Modal ── */}
+      {isTaskModalOpen && (
+        <div className="fixed inset-0 bg-[#0A1931]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200">
+            <h3 className="font-heading text-sm font-bold text-[#0A1931] border-b border-gray-50 pb-3">
+              Add New Task
+            </h3>
+            
+            <div className="space-y-4 pt-4 font-body text-xs text-gray-600">
+              <div>
+                <label className="font-semibold text-gray-700 block mb-1">Task Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Solve Math Homework"
+                  value={taskTitle}
+                  onChange={(e) => setTaskTitle(e.target.value)}
+                  className="w-full bg-white text-gray-800 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-[#4A7FA7]"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-gray-700 block mb-1">Subject</label>
+                <select
+                  value={taskSubjectId}
+                  onChange={(e) => setTaskSubjectId(e.target.value)}
+                  className="w-full bg-white text-gray-800 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-[#4A7FA7]"
+                >
+                  <option value="" disabled>Select Subject</option>
+                  {allSubjects.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-gray-700 block mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    value={taskDueDate}
+                    onChange={(e) => setTaskDueDate(e.target.value)}
+                    className="w-full bg-white text-gray-800 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-[#4A7FA7]"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-gray-700 block mb-1">Type</label>
+                  <select
+                    value={taskType}
+                    onChange={(e) => setTaskType(e.target.value)}
+                    className="w-full bg-white text-gray-800 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-[#4A7FA7]"
+                  >
+                    <option value="assignment">Assignment</option>
+                    <option value="exam">Exam</option>
+                    <option value="project">Project</option>
+                    <option value="lab_report">Lab Report</option>
+                  </select>
+                </div>
+              </div>
+
+              {taskCreateError && (
+                <p className="font-body text-[10px] text-red-500 text-center mt-2">{taskCreateError}</p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-6 border-t border-gray-50 mt-6">
+              <button
+                onClick={() => setIsTaskModalOpen(false)}
+                disabled={taskCreateLoading}
+                className="flex-1 border border-gray-200 text-gray-500 hover:bg-gray-50 font-body text-xs font-semibold py-2.5 px-4 rounded-xl transition-colors duration-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateTaskSubmit}
+                disabled={taskCreateLoading}
+                className="flex-1 bg-[#0A1931] hover:bg-[#1A3D63] text-white font-body text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-colors duration-200 flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {taskCreateLoading ? (
+                  <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving...</>
+                ) : (
+                  "Create Task"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
