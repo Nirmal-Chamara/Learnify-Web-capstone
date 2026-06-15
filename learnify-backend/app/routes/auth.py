@@ -142,6 +142,7 @@ def logout():
     from app.extensions import db
     from app.models.token_blocklist import TokenBlocklist
     from datetime import datetime
+    from flask_jwt_extended import decode_token
 
     user_id = int(get_jwt_identity())
 
@@ -155,14 +156,18 @@ def logout():
     ))
 
     # Optionally revoke the refresh token too (sent in header)
-    refresh_jti = request.headers.get("X-Refresh-Token-JTI")
-    if refresh_jti:
-        db.session.add(TokenBlocklist(
-            jti=refresh_jti,
-            token_type="refresh",
-            user_id=user_id,
-            revoked_at=datetime.utcnow(),
-        ))
+    refresh_token = request.headers.get("X-Refresh-Token")
+    if refresh_token:
+        try:
+            decoded_refresh = decode_token(refresh_token)
+            db.session.add(TokenBlocklist(
+                jti=decoded_refresh["jti"],
+                token_type="refresh",
+                user_id=user_id,
+                revoked_at=datetime.utcnow(),
+            ))
+        except Exception:
+            pass
 
     db.session.commit()
     return success_response(message="Logged out successfully")
