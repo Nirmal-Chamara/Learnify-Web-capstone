@@ -499,6 +499,29 @@ CREATE TABLE admin_audit_logs (
     CONSTRAINT fk_aal_admin FOREIGN KEY (admin_id) REFERENCES users(id)
 ) ENGINE = InnoDB;
 
+
+-- platform feedback submitted by students with AI sentiment scoring
+CREATE TABLE feedback (
+    id         INT          NOT NULL AUTO_INCREMENT,
+    user_id    INT          NOT NULL,
+    subject    VARCHAR(100) NOT NULL,
+    mentor_id  INT          NULL,
+    rating     TINYINT      NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    category   ENUM('Mentor Quality', 'Session Quality', 'Platform Issue', 'AI Assistant', 'General')
+               NOT NULL DEFAULT 'General',
+    comment    TEXT         NOT NULL,
+    sentiment  ENUM('positive', 'neutral', 'negative') NULL,
+    confidence DECIMAL(4,3) NULL,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_fb_user      (user_id),
+    INDEX idx_fb_mentor    (mentor_id),
+    INDEX idx_fb_sentiment (sentiment),
+    CONSTRAINT fk_fb_user   FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fb_mentor FOREIGN KEY (mentor_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE = InnoDB;
+
+
 -- blocklist for revoked JWTs
 CREATE TABLE token_blocklist (
     id         INT          NOT NULL AUTO_INCREMENT,
