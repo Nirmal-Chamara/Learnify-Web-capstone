@@ -4,59 +4,48 @@ import LandingLayout from "../components/layout/LandingLayout"
 import PrivateRoute from "./PrivateRoute"
 
 // Pages
-import LandingPage                from "../pages/LandingPage"
-import DashboardPage              from "../pages/DashboardPage"
-import ProgressPage               from "../pages/ProgressPage"
-import SchedulerPage              from "../pages/SchedulerPage"
-import AIChatPage                 from "../pages/AIChatPage"
-import ResourcesPage              from "../pages/ResourcesPage"
-import FeedbackPage               from "../pages/FeedbackPage"
-import ProfilePage                from "../pages/ProfilePage"
-import LoginPage                  from "../pages/auth/LoginPage"
-import RegisterPage               from "../pages/auth/RegisterPage"
-import MentorResourcesPage        from "../pages/mentor/MentorResourcesPage"
-import MentorProfilePage          from "../pages/mentor/MentorProfilePage"
-import MentorDashboardPage        from "../pages/mentor/MentorDashboardPage"
-import MentorRequestsPage         from "../pages/mentor/MentorRequestsPage"
-import NotificationsPage          from "../pages/NotificationsPage"
-import HelpPage                   from "../pages/HelpPage"
-import AdminAnalyticsPage         from "../pages/admin/AdminAnalyticsPage"
-import AdminFeedbackDashboard     from "../pages/admin/AdminFeedbackDashboard"
-import AdminUsersPage             from "../pages/admin/AdminUsersPage"
-import AdminApprovalsPage         from "../pages/admin/AdminApprovalsPage"
-import AdminSystemMonitoringPage  from "../pages/admin/AdminSystemMonitoringPage"
-import AdminProfilePage           from "../pages/admin/AdminProfilePage"
-import AdminEditProfilePage       from "../pages/admin/AdminEditProfilePage"
-import AdminChangePasswordPage    from "../pages/admin/AdminChangePasswordPage"
+import LandingPage from "../pages/LandingPage"    
+import DashboardPage from "../pages/DashboardPage"
+import ProgressPage from "../pages/ProgressPage"
+import SchedulerPage from "../pages/SchedulerPage"
+import AIChatPage from "../pages/AIChatPage"
+import ResourcesPage from "../pages/ResourcesPage"
+import FeedbackPage from "../pages/FeedbackPage"
+import ProfilePage from "../pages/ProfilePage"
+import LoginPage from "../pages/auth/LoginPage"
+import RegisterPage from "../pages/auth/RegisterPage"
+import MentorResourcesPage from "../pages/mentor/MentorResourcesPage"
+import MentorProfilePage from "../pages/mentor/MentorProfilePage"
+import MentorDashboardPage from "../pages/mentor/MentorDashboardPage"
+import MentorRequestsPage from "../pages/mentor/MentorRequestsPage"
+import NotificationsPage from "../pages/NotificationsPage"
+import HelpPage from "../pages/HelpPage"
+import AdminAnalyticsPage from "../pages/admin/AdminAnalyticsPage"
+import AdminFeedbackDashboard from "../pages/admin/AdminFeedbackDashboard"
+import AdminUsersPage from "../pages/admin/AdminUsersPage"
+import AdminApprovalsPage from "../pages/admin/AdminApprovalsPage"
+import AdminSystemMonitoringPage from "../pages/admin/AdminSystemMonitoringPage"
+import AdminProfilePage from "../pages/admin/AdminProfilePage"
+import AdminEditProfilePage from "../pages/admin/AdminEditProfilePage"
+import AdminChangePasswordPage from "../pages/admin/AdminChangePasswordPage"
 
-// ── Dashboard Dispatcher ──────────────────────────────────
-// Renders the correct dashboard based on user role
-// Student  → DashboardPage
-// Mentor   → MentorDashboardPage
-// Admin    → redirect to /admin/dashboard
 function DashboardDispatcher() {
   const token = localStorage.getItem("access_token")
-
   if (!token) {
     return <Navigate to="/login" replace />
   }
-
   try {
     const payload = JSON.parse(atob(token.split(".")[1]))
-    const role    = payload.role
-
+    const role = payload.role
     if (role === "mentor") {
-      return <MentorDashboardPage />  // ✅ render directly
+      return <Navigate to="/mentor/dashboard" replace />
     }
     if (role === "admin") {
       return <Navigate to="/admin/dashboard" replace />
     }
   } catch (err) {
-    console.error("Failed to parse token:", err)
-    return <Navigate to="/login" replace />
+    console.error("Failed to parse token in dispatcher:", err)
   }
-
-  // Default — student
   return <DashboardPage />
 }
 
@@ -65,28 +54,27 @@ function AppRoutes() {
     <BrowserRouter>
       <Routes>
 
-        {/* ── Public Routes ── */}
+        {/* ── Public Routes — no login needed ── */}
         <Route element={<LandingLayout />}>
           <Route path="/" element={<LandingPage />} />
         </Route>
         <Route path="/login"    element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* ── Protected Routes ── */}
+        {/* ── All logged in users ── */}
         <Route element={
           <PrivateRoute>
             <MainLayout />
           </PrivateRoute>
         }>
 
-          {/* ── Single /dashboard route — dispatcher handles role ── */}
+          {/* Shared pages — all roles */}
           <Route path="/dashboard" element={
             <PrivateRoute roles={["student", "mentor", "admin"]}>
               <DashboardDispatcher />
             </PrivateRoute>
           } />
 
-          {/* ── Shared pages — all roles ── */}
           <Route path="/notifications" element={
             <PrivateRoute roles={["student", "mentor", "admin"]}>
               <NotificationsPage />
@@ -111,7 +99,7 @@ function AppRoutes() {
             </PrivateRoute>
           } />
 
-          {/* ── Student only ── */}
+          {/* ── Student only pages ── */}
           <Route path="/scheduler" element={
             <PrivateRoute roles={["student"]}>
               <SchedulerPage />
@@ -136,7 +124,13 @@ function AppRoutes() {
             </PrivateRoute>
           } />
 
-          {/* ── Mentor only ── */}
+          {/* ── Mentor only pages ── */}
+          <Route path="/mentor/dashboard" element={
+            <PrivateRoute roles={["mentor", "admin"]}>
+              <MentorDashboardPage />
+            </PrivateRoute>
+          } />
+
           <Route path="/mentor/requests" element={
             <PrivateRoute roles={["mentor", "admin"]}>
               <MentorRequestsPage />
@@ -155,7 +149,7 @@ function AppRoutes() {
             </PrivateRoute>
           } />
 
-          {/* ── Admin only ── */}
+          {/* ── Admin only pages ── */}
           <Route path="/admin/dashboard" element={
             <PrivateRoute roles={["admin"]}>
               <AdminAnalyticsPage />
@@ -179,30 +173,11 @@ function AppRoutes() {
               <AdminApprovalsPage />
             </PrivateRoute>
           } />
+          <Route path="/admin/system" element={<PrivateRoute roles={["admin"]}><AdminSystemMonitoringPage /></PrivateRoute>} />
 
-          <Route path="/admin/system" element={
-            <PrivateRoute roles={["admin"]}>
-              <AdminSystemMonitoringPage />
-            </PrivateRoute>
-          } />
-
-          <Route path="/admin/profile" element={
-            <PrivateRoute roles={["admin"]}>
-              <AdminProfilePage />
-            </PrivateRoute>
-          } />
-
-          <Route path="/admin/profile/edit" element={
-            <PrivateRoute roles={["admin"]}>
-              <AdminEditProfilePage />
-            </PrivateRoute>
-          } />
-
-          <Route path="/admin/change-password" element={
-            <PrivateRoute roles={["admin"]}>
-              <AdminChangePasswordPage />
-            </PrivateRoute>
-          } />
+          <Route path="/admin/profile" element={<PrivateRoute roles={["admin"]}><AdminProfilePage /></PrivateRoute>} />
+          <Route path="/admin/profile/edit" element={<PrivateRoute roles={["admin"]}><AdminEditProfilePage /></PrivateRoute>} />
+          <Route path="/admin/change-password" element={<PrivateRoute roles={["admin"]}><AdminChangePasswordPage /></PrivateRoute>} />
 
         </Route>
 
