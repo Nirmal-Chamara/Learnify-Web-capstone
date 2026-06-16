@@ -102,3 +102,19 @@ def end_session(session_id):
     except Exception as e:
         db.session.rollback()
         return error_response("END_FAILED", str(e), status=500)
+
+
+# ── GET /api/tracking/metrics ──────────────────────────────────────────────
+@bp.route("/metrics", methods=["GET"])
+@jwt_required()
+def get_metrics():
+    user_id = int(get_jwt_identity())
+    days = request.args.get("days", default=7, type=int)
+
+    from app.services.tracking_engine import get_productivity_metrics
+    metrics = get_productivity_metrics(user_id, days)
+
+    if not metrics:
+        return error_response("METRICS_FAILED", "Failed to calculate metrics", status=500)
+
+    return success_response(data=metrics)
