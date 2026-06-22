@@ -9,6 +9,7 @@ import {
   getMyResources,
   getMyStats,
   uploadResource,
+  uploadFile,
   deleteResource,
   updateResource,
 } from "../../api/resourcesApi"
@@ -346,14 +347,14 @@ function MentorResourcesPage() {
       {showUpload && (
         <UploadModal
           onClose={() => setShowUpload(false)}
-          onSuccess={fetchAll}
+          onUploadSuccess={fetchAll}
           subjects={subjects}
         />
       )}
       {editResource && (
         <UploadModal
           onClose={() => setEditResource(null)}
-          onSuccess={fetchAll}
+          onUploadSuccess={fetchAll}
           subjects={subjects}
           editResource={editResource}
         />
